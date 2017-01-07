@@ -436,9 +436,9 @@ s, ...) _MAC_L##s(c, f, n00, a00)
 #define _MAC_L1(c, f, n, a) c##f(n, a)
 #define _MAC_L0(c, f, n, a)
 
-#define _MAC_C(a, b) a##b
+#define _MAC_C(a, b) __ ##a ##b
 #define _MAC_S(a, b) _MAC_C(a, b)
-#define _MAC_N(n, a) __
+#define _MAC_N(n, a) _
 #define _MAC_P(n, ...) _MAC_S(_MAC_L3(_MAC_N,, ,,,, ,,,, ,,,, ,,,, \
                                       ##__VA_ARGS__), n)(__VA_ARGS__)
 
@@ -448,15 +448,15 @@ s, ...) _MAC_L##s(c, f, n00, a00)
 #define _MAC_A0(n, a) _MAC_P0(n,  )
 
 #define _MAC_F(tnfv, text, retn, name, ...) __attribute__((unused)) \
-static SEL name() { static SEL what = 0;                            \
+static SEL __ ##name() { static SEL what = 0;                       \
     if (!what) what = sel_registerName(text); return what;          \
 } __attribute__((unused))                                           \
-static retn __ ##name(void *inst _MAC_L(_MAC_P, ##__VA_ARGS__)) {   \
+static retn ___ ##name(void *inst _MAC_L(_MAC_P, ##__VA_ARGS__)) {  \
     retn (*func)(void*, SEL, ##__VA_ARGS__) =                       \
          (tnfv < 4)? (tnfv != 1)? (void*)objc_msgSend               \
                                 : (void*)objc_msgSend_fpret         \
                                 : (void*)objc_msgSend_stret;        \
-    return func(inst, name() _MAC_L(_MAC_A, ##__VA_ARGS__));        \
+    return func(inst, __ ##name() _MAC_L(_MAC_A, ##__VA_ARGS__));   \
 }
 
 #define _MAC_T(name) __attribute__((unused))                        \
