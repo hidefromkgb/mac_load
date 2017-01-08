@@ -531,7 +531,7 @@ static retn ___ ##name(void *inst _MAC_L(_MAC_P, ##__VA_ARGS__)) {  \
 
 #define _MAC_T(name) __attribute__((unused))                        \
 static Class __ ##name() { static Class what = 0;                   \
-    if (!what) what = objc_getClass(#name); return what;            \
+    if (!what) what = (Class)objc_getClass(#name); return what;     \
 } typedef struct name name
 
  _MAC_T(NSObject);
