@@ -335,18 +335,19 @@ static struct {
 #define MAC_10_08_PLUS (kCFCoreFoundationVersionNumber >=  744.00)
 #define MAC_10_09_PLUS (kCFCoreFoundationVersionNumber >=  855.11)
 #define MAC_10_10_PLUS (kCFCoreFoundationVersionNumber >= 1151.16)
-
-/// NSString creation macro
-#define MAC_UTF8(s) CFStringCreateWithBytes(0, (s)? (uint8_t*)(s) : (uint8_t*)"", strlen((s)? (char*)(s) : (char*)""), kCFStringEncodingUTF8, false)
-
-/// class instance variable management macros
-#define MAC_GET_IVAR(inst, name, data) object_getInstanceVariable((void*)(inst), name, (void**)(data))
-#define MAC_SET_IVAR(inst, name, data) object_setInstanceVariable((void*)(inst), name, (void*)(data))
+#define MAC_10_11_PLUS (kCFCoreFoundationVersionNumber >= 1253.00)
 
 
 
+/// class instance variable management
+#define MAC_GetIvar(inst, name, data) object_getInstanceVariable((void*)(inst), name, (void**)(data))
+#define MAC_SetIvar(inst, name, data) object_setInstanceVariable((void*)(inst), name, (void*)(data))
+
+
+
+/// NSString management
 __attribute__((unused))
-static char *MAC_CopyUTF8(CFStringRef cfsr) {
+static char *MAC_LoadString(CFStringRef cfsr) {
     CFIndex slen, size;
     uint8_t *retn = 0;
 
@@ -356,6 +357,8 @@ static char *MAC_CopyUTF8(CFStringRef cfsr) {
                          '?', false, retn = calloc(1, 1 + size), size, 0);
     return (char*)retn;
 }
+#define MAC_MakeString(s) CFStringCreateWithBytes(0, (s)? (uint8_t*)(s) : (uint8_t*)"", strlen((s)? (char*)(s) : (char*)""), kCFStringEncodingUTF8, false)
+#define MAC_FreeString(s) CFRelease(s)
 
 
 
@@ -363,7 +366,7 @@ static char *MAC_CopyUTF8(CFStringRef cfsr) {
 /// be created with some NS<Whatever> values used as keys, remember that in
 /// the CoreFoundation framework their equivalents are named kCT<Whatever>.
 /// If there are none in CF, just import them: "extern void *NS<Whatever>".
-#define MAC_MakeDict(k, ...) _MAC_MakeDict(k, ##__VA_ARGS__, nil)
+#define MAC_MakeDict(k, ...) _MAC_MakeDict(k, ##__VA_ARGS__, nil, nil)
 __attribute__((unused))
 static CFDictionaryRef _MAC_MakeDict(CFStringRef key1, ...) {
     CFDictionaryRef retn = 0;
