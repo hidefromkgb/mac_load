@@ -340,7 +340,7 @@ static struct {
 
 
 /// template for handler function prototypes
-#define MAC_Handler(func, ...) func(void *this, SEL name, ##__VA_ARGS__)
+#define MAC_Handler(func, ...) func(void *self, SEL name, ##__VA_ARGS__)
 
 
 
