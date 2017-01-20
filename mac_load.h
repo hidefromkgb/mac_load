@@ -339,6 +339,11 @@ static struct {
 
 
 
+/// template for handler function prototypes
+#define MAC_Handler(func, ...) func(void *this, SEL name, ##__VA_ARGS__)
+
+
+
 /// class instance variable management
 #define MAC_GetIvar(inst, name, data) object_getInstanceVariable((void*)(inst), name, (void**)(data))
 #define MAC_SetIvar(inst, name, data) object_setInstanceVariable((void*)(inst), name, (void*)(data))
