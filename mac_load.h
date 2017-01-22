@@ -1181,6 +1181,11 @@ _MAC_F(0, "keyDown:", void,
 #define    keyDown_(...) \
     _MAC_P(keyDown_, ##__VA_ARGS__)
 
+_MAC_F(0, "keyCode", unsigned short,
+           keyCode);
+#define    keyCode(...) \
+    _MAC_P(keyCode, ##__VA_ARGS__)
+
 _MAC_F(2, "mouseLocation", CGPoint,
            mouseLocation);
 #define    mouseLocation(...) \
