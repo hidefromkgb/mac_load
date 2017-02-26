@@ -106,6 +106,24 @@ enum {
     NSApplicationActivationPolicyProhibited = 2,
 };
 enum {
+    NSWarningAlertStyle       = 0,
+    NSInformationalAlertStyle = 1,
+    NSCriticalAlertStyle      = 2,
+};
+enum {
+    NSAlertFirstButtonReturn  = 1000,
+    NSAlertSecondButtonReturn = 1001,
+    NSAlertThirdButtonReturn  = 1002,
+};
+enum {
+    NSCancelButton = 0,
+    NSOKButton     = 1,
+};
+enum {
+    NSFileHandlingPanelCancelButton = NSCancelButton,
+    NSFileHandlingPanelOKButton     = NSOKButton,
+};
+enum {
     NSMixedState = -1,
     NSOffState   =  0,
     NSOnState    =  1,
@@ -416,16 +434,35 @@ static CFDictionaryRef _MAC_MakeDict(CFStringRef key1, ...) {
 
 
 __attribute__((unused))
-static CFRunLoopTimerRef MAC_MakeTimer(unsigned time, void *func, void *data) {
+static CFRunLoopTimerRef MAC_MakeTimer(unsigned time,
+                                       CFRunLoopTimerCallBack func,
+                                       void *data) {
+    extern CFStringRef NSRunLoopCommonModes;
     CFRunLoopTimerContext ctxt = {0, data};
     CFRunLoopTimerRef retn =
         CFRunLoopTimerCreate(0, CFAbsoluteTimeGetCurrent(),
                              0.001 * time, 0, 0, func, &ctxt);
 
-    CFRunLoopAddTimer(CFRunLoopGetCurrent(), retn, kCFRunLoopCommonModes);
+    CFRunLoopAddTimer(CFRunLoopGetCurrent(), retn, NSRunLoopCommonModes);
     return retn;
 }
 #define MAC_FreeTimer(t) CFRunLoopTimerInvalidate(t)
+
+
+
+__attribute__((unused))
+static CFRunLoopObserverRef MAC_MakeIdleFunc(CFRunLoopObserverCallBack func,
+                                             void *data) {
+    extern CFStringRef NSRunLoopCommonModes;
+    CFRunLoopObserverContext ctxt = {0, data};
+    CFRunLoopObserverRef retn =
+        CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                                true, 0, func, &ctxt);
+
+    CFRunLoopAddObserver(CFRunLoopGetCurrent(), retn, NSRunLoopCommonModes);
+    return retn;
+}
+#define MAC_FreeIdleFunc(t) CFRunLoopObserverInvalidate(t)
 
 
 
@@ -546,6 +583,10 @@ static Class __ ##name() { static Class what = 0;                   \
 #define NSObject() \
       __NSObject()
 
+ _MAC_T(NSUserDefaults);
+#define NSUserDefaults() \
+      __NSUserDefaults()
+
  _MAC_T(NSApplication);
 #define NSApplication() \
       __NSApplication()
@@ -573,6 +614,14 @@ static Class __ ##name() { static Class what = 0;                   \
  _MAC_T(NSFileManager);
 #define NSFileManager() \
       __NSFileManager()
+
+ _MAC_T(NSOpenPanel);
+#define NSOpenPanel() \
+      __NSOpenPanel()
+
+ _MAC_T(NSAlert);
+#define NSAlert() \
+      __NSAlert()
 
  _MAC_T(NSNumberFormatter);
 #define NSNumberFormatter() \
@@ -751,11 +800,51 @@ _MAC_F(0, "run", void,
 #define    run(...) \
     _MAC_P(run, ##__VA_ARGS__)
 
+_MAC_F(0, "runModal", NSInteger,
+           runModal);
+#define    runModal(...) \
+    _MAC_P(runModal, ##__VA_ARGS__)
+
 _MAC_F(0, "stop:", void,
            stop_,
            void*);
 #define    stop_(...) \
     _MAC_P(stop_, ##__VA_ARGS__)
+
+_MAC_F(0, "standardUserDefaults", NSUserDefaults*,
+           standardUserDefaults);
+#define    standardUserDefaults(...) \
+    _MAC_P(standardUserDefaults, ##__VA_ARGS__)
+
+_MAC_F(0, "objectForKey:", NSObject*,
+           objectForKey_,
+           CFStringRef);
+#define    objectForKey_(...) \
+    _MAC_P(objectForKey_, ##__VA_ARGS__)
+
+_MAC_F(0, "setObject:forKey:", void,
+           setObject_forKey_,
+           NSObject*, CFStringRef);
+#define    setObject_forKey_(...) \
+    _MAC_P(setObject_forKey_, ##__VA_ARGS__)
+
+_MAC_F(0, "setBool:forKey:", void,
+           setBool_forKey_,
+           bool, CFStringRef);
+#define    setBool_forKey_(...) \
+    _MAC_P(setBool_forKey_, ##__VA_ARGS__)
+
+_MAC_F(0, "localizedStringForKey:value:table:", CFStringRef,
+           localizedStringForKey_value_table_,
+           CFStringRef, CFStringRef, CFStringRef);
+#define    localizedStringForKey_value_table_(...) \
+    _MAC_P(localizedStringForKey_value_table_, ##__VA_ARGS__)
+
+_MAC_F(0, "bundleWithIdentifier:", NSBundle*,
+           bundleWithIdentifier_,
+           CFStringRef);
+#define    bundleWithIdentifier_(...) \
+    _MAC_P(bundleWithIdentifier_, ##__VA_ARGS__)
 
 _MAC_F(0, "mainBundle", NSBundle*,
            mainBundle);
@@ -772,6 +861,11 @@ _MAC_F(0, "URLsForDirectory:inDomains:", CFArrayRef,
            NSInteger, NSInteger);
 #define    URLsForDirectory_inDomains_(...) \
     _MAC_P(URLsForDirectory_inDomains_, ##__VA_ARGS__)
+
+_MAC_F(0, "URLs", CFArrayRef,
+           URLs);
+#define    URLs(...) \
+    _MAC_P(URLs, ##__VA_ARGS__)
 
 _MAC_F(0, "separatorItem", NSMenuItem*,
            separatorItem);
@@ -1307,6 +1401,11 @@ _MAC_F(0, "displayIfNeeded", void,
 #define    displayIfNeeded(...) \
     _MAC_P(displayIfNeeded, ##__VA_ARGS__)
 
+_MAC_F(0, "display", void,
+           display);
+#define    display(...) \
+    _MAC_P(display, ##__VA_ARGS__)
+
 _MAC_F(0, "setMinValue:", void,
            setMinValue_,
            double);
@@ -1512,6 +1611,53 @@ _MAC_F(0, "otherEventWithType:location:modifierFlags:timestamp:windowNumber:cont
            NSInteger, CGPoint, NSInteger, CGFloat, NSInteger, NSGraphicsContext*, short, NSInteger, NSInteger);
 #define    otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(...) \
     _MAC_P(otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_, ##__VA_ARGS__)
+
+_MAC_F(0, "addButtonWithTitle:", NSButton*,
+           addButtonWithTitle_,
+           CFStringRef);
+#define    addButtonWithTitle_(...) \
+    _MAC_P(addButtonWithTitle_, ##__VA_ARGS__)
+
+_MAC_F(0, "setMessageText:", void,
+           setMessageText_,
+           CFStringRef);
+#define    setMessageText_(...) \
+    _MAC_P(setMessageText_, ##__VA_ARGS__)
+
+_MAC_F(0, "setInformativeText:", void,
+           setInformativeText_,
+           CFStringRef);
+#define    setInformativeText_(...) \
+    _MAC_P(setInformativeText_, ##__VA_ARGS__)
+
+_MAC_F(0, "setAlertStyle:", void,
+           setAlertStyle_,
+           NSInteger);
+#define    setAlertStyle_(...) \
+    _MAC_P(setAlertStyle_, ##__VA_ARGS__)
+
+_MAC_F(0, "openPanel", NSOpenPanel*,
+           openPanel);
+#define    openPanel(...) \
+    _MAC_P(openPanel, ##__VA_ARGS__)
+
+_MAC_F(0, "setAllowsMultipleSelection:", void,
+           setAllowsMultipleSelection_,
+           bool);
+#define    setAllowsMultipleSelection_(...) \
+    _MAC_P(setAllowsMultipleSelection_, ##__VA_ARGS__)
+
+_MAC_F(0, "setCanChooseDirectories:", void,
+           setCanChooseDirectories_,
+           bool);
+#define    setCanChooseDirectories_(...) \
+    _MAC_P(setCanChooseDirectories_, ##__VA_ARGS__)
+
+_MAC_F(0, "setCanChooseFiles:", void,
+           setCanChooseFiles_,
+           bool);
+#define    setCanChooseFiles_(...) \
+    _MAC_P(setCanChooseFiles_, ##__VA_ARGS__)
 
 #undef _MAC_L
 #undef _MAC_L4
