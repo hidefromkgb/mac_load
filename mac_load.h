@@ -1201,7 +1201,7 @@ _MAC_F(1, "thickness", CGFloat,
 #define    thickness(...) \
     _MAC_P(thickness, ##__VA_ARGS__)
 
-_MAC_F(2, "cellSize", CGPoint,
+_MAC_F(2, "cellSize", CGSize,
            cellSize);
 #define    cellSize(...) \
     _MAC_P(cellSize, ##__VA_ARGS__)
@@ -1322,7 +1322,7 @@ _MAC_F(1, "systemFontSize", CGFloat,
 #define    systemFontSize(...) \
     _MAC_P(systemFontSize, ##__VA_ARGS__)
 
-_MAC_F(2, "maximumAdvancement", CGPoint,
+_MAC_F(2, "maximumAdvancement", CGSize,
            maximumAdvancement);
 #define    maximumAdvancement(...) \
     _MAC_P(maximumAdvancement, ##__VA_ARGS__)
@@ -1367,6 +1367,12 @@ _MAC_F(0, "drawInRect:withAttributes:", void,
            CGRect, CFDictionaryRef);
 #define    drawInRect_withAttributes_(...) \
     _MAC_P(drawInRect_withAttributes_, ##__VA_ARGS__)
+
+_MAC_F(2, "sizeWithAttributes:", CGSize,
+           sizeWithAttributes_,
+           CFDictionaryRef);
+#define    sizeWithAttributes_(...) \
+    _MAC_P(sizeWithAttributes_, ##__VA_ARGS__)
 
 _MAC_F(0, "textDidChange:", void,
            textDidChange_,
