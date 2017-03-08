@@ -1665,6 +1665,24 @@ _MAC_F(0, "setCanChooseFiles:", void,
 #define    setCanChooseFiles_(...) \
     _MAC_P(setCanChooseFiles_, ##__VA_ARGS__)
 
+_MAC_F(0, "setAllowedFileTypes:", void,
+           setAllowedFileTypes_,
+           CFArrayRef);
+#define    setAllowedFileTypes_(...) \
+    _MAC_P(setAllowedFileTypes_, ##__VA_ARGS__)
+
+_MAC_F(0, "setNameFieldStringValue:", void,
+           setNameFieldStringValue_,
+           CFStringRef);
+#define    setNameFieldStringValue_(...) \
+    _MAC_P(setNameFieldStringValue_, ##__VA_ARGS__)
+
+_MAC_F(0, "setDirectoryURL:", void,
+           setDirectoryURL_,
+           CFURLRef);
+#define    setDirectoryURL_(...) \
+    _MAC_P(setDirectoryURL_, ##__VA_ARGS__)
+
 #undef _MAC_L
 #undef _MAC_L4
 #undef _MAC_P1
