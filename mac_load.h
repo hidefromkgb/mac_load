@@ -357,8 +357,9 @@ static struct {
 
 
 
-/// template for handler function prototypes
-#define MAC_Handler(func, ...) func(void *self, SEL name, ##__VA_ARGS__)
+/// template for handler function prototypes; names "self" and "_cmd" taken from ObjC docs:
+/// https://developer.apple.com/documentation/objectivec/1418901-class_addmethod?language=objc
+#define MAC_Handler(func, ...) func(void *self, SEL _cmd, ##__VA_ARGS__)
 
 
 
