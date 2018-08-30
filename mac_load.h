@@ -1684,6 +1684,47 @@ _MAC_F(0, "setDirectoryURL:", void,
 #define    setDirectoryURL_(...) \
     _MAC_P(setDirectoryURL_, ##__VA_ARGS__)
 
+_MAC_F(0, "wantsBestResolutionOpenGLSurface", bool,
+           wantsBestResolutionOpenGLSurface);
+#define    wantsBestResolutionOpenGLSurface(...) \
+    _MAC_P(wantsBestResolutionOpenGLSurface, ##__VA_ARGS__)
+
+_MAC_F(2, "convertSizeToBacking:", CGSize,
+           convertSizeToBacking_,
+           CGSize);
+#define    convertSizeToBacking_(...) \
+    _MAC_P(convertSizeToBacking_, ##__VA_ARGS__)
+
+_MAC_F(2, "convertSizeFromBacking:", CGSize,
+           convertSizeFromBacking_,
+           CGSize);
+#define    convertSizeFromBacking_(...) \
+    _MAC_P(convertSizeFromBacking_, ##__VA_ARGS__)
+
+_MAC_F(2, "convertPointToBacking:", CGPoint,
+           convertPointToBacking_,
+           CGPoint);
+#define    convertPointToBacking_(...) \
+    _MAC_P(convertPointToBacking_, ##__VA_ARGS__)
+
+_MAC_F(2, "convertPointFromBacking:", CGPoint,
+           convertPointFromBacking_,
+           CGPoint);
+#define    convertPointFromBacking_(...) \
+    _MAC_P(convertPointFromBacking_, ##__VA_ARGS__)
+
+_MAC_F(4, "convertRectToBacking:", CGRect,
+           convertRectToBacking_,
+           CGRect);
+#define    convertRectToBacking_(...) \
+    _MAC_P(convertRectToBacking_, ##__VA_ARGS__)
+
+_MAC_F(4, "convertRectFromBacking:", CGRect,
+           convertRectFromBacking_,
+           CGRect);
+#define    convertRectFromBacking_(...) \
+    _MAC_P(convertRectFromBacking_, ##__VA_ARGS__)
+
 #undef _MAC_L
 #undef _MAC_L4
 #undef _MAC_P1
