@@ -338,201 +338,6 @@ enum {
 
 
 
-static struct {
-    Class uuid;
-    char *name;
-    long  icnt;
-} *_MAC_Subclasses = 0;
-
-
-
-/// OSX versions
-#define MAC_10_05_PLUS (kCFCoreFoundationVersionNumber >=  476.00)
-#define MAC_10_06_PLUS (kCFCoreFoundationVersionNumber >=  550.00)
-#define MAC_10_07_PLUS (kCFCoreFoundationVersionNumber >=  635.00)
-#define MAC_10_08_PLUS (kCFCoreFoundationVersionNumber >=  744.00)
-#define MAC_10_09_PLUS (kCFCoreFoundationVersionNumber >=  855.11)
-#define MAC_10_10_PLUS (kCFCoreFoundationVersionNumber >= 1151.16)
-#define MAC_10_11_PLUS (kCFCoreFoundationVersionNumber >= 1253.00)
-
-
-
-/// template for handler function prototypes; names "self" and "_cmd" taken from ObjC docs:
-/// https://developer.apple.com/documentation/objectivec/1418901-class_addmethod?language=objc
-#define MAC_Handler(func, ...) func(void *self, SEL _cmd, ##__VA_ARGS__)
-
-
-
-/// class instance variable management
-#define MAC_GetIvar(inst, name, data) object_getInstanceVariable((void*)(inst), name, (void**)(data))
-#define MAC_SetIvar(inst, name, data) object_setInstanceVariable((void*)(inst), name, (void*)(data))
-
-
-
-/// NSString management
-__attribute__((unused))
-static char *MAC_LoadString(CFStringRef cfsr) {
-    CFIndex slen, size;
-    uint8_t *retn = 0;
-
-    if (CFStringGetBytes(cfsr, CFRangeMake(0, slen = CFStringGetLength(cfsr)),
-                         kCFStringEncodingUTF8, '?', false, 0, 0, &size) > 0)
-        CFStringGetBytes(cfsr, CFRangeMake(0, slen), kCFStringEncodingUTF8,
-                         '?', false, retn = calloc(1, 1 + size), size, 0);
-    return (char*)retn;
-}
-#define MAC_MakeString(s) CFStringCreateWithBytes(0, (s)? (uint8_t*)(s) : (uint8_t*)"", strlen((s)? (char*)(s) : (char*)""), kCFStringEncodingUTF8, false)
-#define MAC_FreeString(s) CFRelease(s)
-
-
-
-/// When the official documentation states that there is an NSDictionary to
-/// be created with some NS<Whatever> values used as keys, remember that in
-/// the CoreFoundation framework their equivalents are named kCT<Whatever>.
-/// If there are none in CF, just import them: "extern void *NS<Whatever>".
-#define MAC_MakeDict(k, ...) _MAC_MakeDict(k, ##__VA_ARGS__, nil, nil)
-__attribute__((unused))
-static CFDictionaryRef _MAC_MakeDict(CFStringRef key1, ...) {
-    CFDictionaryRef retn = 0;
-    CFStringRef iter;
-    va_list list;
-    long size;
-
-    CFStringRef *keys;
-    void **vals;
-
-    size = 0;
-    iter = key1;
-    va_start(list, key1);
-    while (iter) {
-        va_arg(list, void*);
-        iter = va_arg(list, CFStringRef);
-        size++;
-    }
-    va_end(list);
-    if (size) {
-        keys = malloc(size * sizeof(*keys));
-        vals = malloc(size * sizeof(*vals));
-        size = 0;
-        iter = key1;
-        va_start(list, key1);
-        while (iter) {
-            keys[size] = iter;
-            vals[size++] = va_arg(list, void*);
-            iter = va_arg(list, CFStringRef);
-        }
-        va_end(list);
-        retn = CFDictionaryCreate(0, (const void**)keys, (const void**)vals,
-                                  size, &kCFTypeDictionaryKeyCallBacks,
-                                        &kCFTypeDictionaryValueCallBacks);
-        free(vals);
-        free(keys);
-    }
-    return retn;
-}
-#define MAC_FreeDict(d) CFRelease(d)
-
-
-
-__attribute__((unused))
-static CFRunLoopTimerRef MAC_MakeTimer(unsigned time,
-                                       CFRunLoopTimerCallBack func,
-                                       void *data) {
-    extern CFStringRef NSRunLoopCommonModes;
-    CFRunLoopTimerContext ctxt = {0, data};
-    CFRunLoopTimerRef retn =
-        CFRunLoopTimerCreate(0, CFAbsoluteTimeGetCurrent(),
-                             0.001 * time, 0, 0, func, &ctxt);
-
-    CFRunLoopAddTimer(CFRunLoopGetCurrent(), retn, NSRunLoopCommonModes);
-    return retn;
-}
-#define MAC_FreeTimer(t) CFRunLoopTimerInvalidate(t)
-
-
-
-__attribute__((unused))
-static CFRunLoopObserverRef MAC_MakeIdleFunc(CFRunLoopObserverCallBack func,
-                                             void *data) {
-    extern CFStringRef NSRunLoopCommonModes;
-    CFRunLoopObserverContext ctxt = {0, data};
-    CFRunLoopObserverRef retn =
-        CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-                                true, 0, func, &ctxt);
-
-    CFRunLoopAddObserver(CFRunLoopGetCurrent(), retn, NSRunLoopCommonModes);
-    return retn;
-}
-#define MAC_FreeIdleFunc(t) CFRunLoopObserverInvalidate(t)
-
-
-
-__attribute__((unused))
-static Class MAC_MakeClass(char *name, Class base, void **flds, void **mths) {
-    Class retn = 0;
-    long iter = 0;
-
-    for (; _MAC_Subclasses && _MAC_Subclasses[iter].name; iter++)
-        if (!strcmp(name, _MAC_Subclasses[iter].name)) {
-            retn = _MAC_Subclasses[iter].uuid;
-            if (base)
-                _MAC_Subclasses[iter].icnt++;
-            break;
-        }
-    if (!retn) {
-        retn = objc_allocateClassPair(base, name, 0);
-        _MAC_Subclasses = realloc(_MAC_Subclasses,
-                                 (iter + 2) * sizeof(*_MAC_Subclasses));
-        _MAC_Subclasses[iter] =
-            (typeof(*_MAC_Subclasses)){retn, strdup(name), 1};
-        _MAC_Subclasses[iter + 1].name = 0;
-
-        iter = -1;
-        /// adding fields
-        while (flds && flds[++iter])
-            class_addIvar(retn, (char*)flds[iter],
-                          sizeof(void*), (sizeof(void*) >= 8)? 3 : 2, 0);
-        iter = -2;
-        /// overloading methods
-        while (mths && mths[iter += 2])
-            class_addMethod(retn, (SEL)mths[iter], (IMP)mths[iter + 1], 0);
-
-        objc_registerClassPair(retn);
-    }
-    return retn;
-}
-#define MAC_LoadClass(n) MAC_MakeClass(n, (Class)0, (void**)0, (void**)0)
-#define MAC_TempArray(...) (void*[]){__VA_ARGS__, 0}
-
-
-
-__attribute__((unused))
-static void MAC_FreeClass(Class uuid) {
-    long iter, size = 0;
-
-    for (; _MAC_Subclasses && _MAC_Subclasses[size].name; size++);
-    for (iter = 0; iter < size; iter++)
-        if (uuid == _MAC_Subclasses[iter].uuid) {
-            _MAC_Subclasses[iter].icnt--;
-            if (!_MAC_Subclasses[iter].icnt) {
-                objc_disposeClassPair(_MAC_Subclasses[iter].uuid);
-                free(_MAC_Subclasses[iter].name);
-                if (iter < --size) {
-                    _MAC_Subclasses[iter] = _MAC_Subclasses[size];
-                    iter = size;
-                }
-                _MAC_Subclasses[iter].name = 0;
-            }
-            break;
-        }
-    if (_MAC_Subclasses && !_MAC_Subclasses[0].name) {
-        free(_MAC_Subclasses);
-        _MAC_Subclasses = 0;
-    }
-}
-
-
-
 #define _MAC_L(c, ...) \
 _MAC_L4(c,1,0,,,,,,,,,,,,,##__VA_ARGS__) _MAC_L4(c,0,1,,,,,,,,,##__VA_ARGS__) \
 _MAC_L4(c,0,2,,,,,        ##__VA_ARGS__) _MAC_L4(c,0,3,        ##__VA_ARGS__)
@@ -575,10 +380,66 @@ static retn ___ ##name(void *inst _MAC_L(_MAC_P, ##__VA_ARGS__)) {  \
     return func(inst, __ ##name() _MAC_L(_MAC_A, ##__VA_ARGS__));   \
 }
 
-#define _MAC_T(name) __attribute__((unused))                        \
-static Class __ ##name() { static Class what = 0;                   \
-    if (!what) what = (Class)objc_getClass(#name); return what;     \
-} typedef struct name name
+#define _MAC_T(...) _MAC_T2(__VA_ARGS__, 1, 0)
+#define _MAC_T2(a, b, n, ...) __attribute__((unused))               \
+static Class __ ##a() { static Class what = 0;                      \
+    if (!what) what = (Class)objc_getClass(#a); return what;        \
+} typedef struct _MAC_T##n(a, b) a
+#define _MAC_T1(a, b) b
+#define _MAC_T0(a, b) a
+
+
+
+/// Regular types
+
+#if __LP64__ || TARGET_OS_EMBEDDED || TARGET_OS_IPHONE || TARGET_OS_WIN32 || NS_BUILD_32_LIKE_64
+    typedef long NSInteger;
+    typedef unsigned long NSUInteger;
+#else
+    typedef int NSInteger;
+    typedef unsigned int NSUInteger;
+#endif
+
+typedef double NSTimeInterval;
+typedef CGPoint NSPoint;
+typedef CGSize NSSize;
+typedef CGRect NSRect;
+
+
+
+/// Toll-free bridged types
+
+ _MAC_T(NSArray, __CFArray);
+#define NSArray() \
+      __NSArray()
+
+ _MAC_T(NSString, __CFString);
+#define NSString() \
+      __NSString()
+
+ _MAC_T(NSAttributedString, __CFAttributedString);
+#define NSAttributedString() \
+      __NSAttributedString()
+
+ _MAC_T(NSDictionary, __CFDictionary);
+#define NSDictionary() \
+      __NSDictionary()
+
+ _MAC_T(NSTimer, __CFRunLoopTimer);
+#define NSTimer() \
+      __NSTimer()
+
+ _MAC_T(NSURL, __CFURL);
+#define NSURL() \
+      __NSURL()
+
+ _MAC_T(NSFont, __CTFont);
+#define NSFont() \
+      __NSFont()
+
+
+
+/// Regular types
 
  _MAC_T(NSObject);
 #define NSObject() \
@@ -603,10 +464,6 @@ static Class __ ##name() { static Class what = 0;                   \
  _MAC_T(NSEvent);
 #define NSEvent() \
       __NSEvent()
-
- _MAC_T(NSFont);
-#define NSFont() \
-      __NSFont()
 
  _MAC_T(NSMutableParagraphStyle);
 #define NSMutableParagraphStyle() \
@@ -724,13 +581,7 @@ static Class __ ##name() { static Class what = 0;                   \
 #define NSOpenGLPixelFormat() \
       __NSOpenGLPixelFormat()
 
-#if __LP64__ || TARGET_OS_EMBEDDED || TARGET_OS_IPHONE || TARGET_OS_WIN32 || NS_BUILD_32_LIKE_64
-    typedef long NSInteger;
-    typedef unsigned long NSUInteger;
-#else
-    typedef int NSInteger;
-    typedef unsigned int NSUInteger;
-#endif
+
 
 _MAC_F(0, "init", void*,
            init);
@@ -819,31 +670,31 @@ _MAC_F(0, "standardUserDefaults", NSUserDefaults*,
 
 _MAC_F(0, "objectForKey:", NSObject*,
            objectForKey_,
-           CFStringRef);
+           NSString*);
 #define    objectForKey_(...) \
     _MAC_P(objectForKey_, ##__VA_ARGS__)
 
 _MAC_F(0, "setObject:forKey:", void,
            setObject_forKey_,
-           NSObject*, CFStringRef);
+           NSObject*, NSString*);
 #define    setObject_forKey_(...) \
     _MAC_P(setObject_forKey_, ##__VA_ARGS__)
 
 _MAC_F(0, "setBool:forKey:", void,
            setBool_forKey_,
-           bool, CFStringRef);
+           bool, NSString*);
 #define    setBool_forKey_(...) \
     _MAC_P(setBool_forKey_, ##__VA_ARGS__)
 
-_MAC_F(0, "localizedStringForKey:value:table:", CFStringRef,
+_MAC_F(0, "localizedStringForKey:value:table:", NSString*,
            localizedStringForKey_value_table_,
-           CFStringRef, CFStringRef, CFStringRef);
+           NSString*, NSString*, NSString*);
 #define    localizedStringForKey_value_table_(...) \
     _MAC_P(localizedStringForKey_value_table_, ##__VA_ARGS__)
 
 _MAC_F(0, "bundleWithIdentifier:", NSBundle*,
            bundleWithIdentifier_,
-           CFStringRef);
+           NSString*);
 #define    bundleWithIdentifier_(...) \
     _MAC_P(bundleWithIdentifier_, ##__VA_ARGS__)
 
@@ -852,18 +703,18 @@ _MAC_F(0, "mainBundle", NSBundle*,
 #define    mainBundle(...) \
     _MAC_P(mainBundle, ##__VA_ARGS__)
 
-_MAC_F(0, "bundlePath", CFStringRef,
+_MAC_F(0, "bundlePath", NSString*,
            bundlePath);
 #define    bundlePath(...) \
     _MAC_P(bundlePath, ##__VA_ARGS__)
 
-_MAC_F(0, "URLsForDirectory:inDomains:", CFArrayRef,
+_MAC_F(0, "URLsForDirectory:inDomains:", NSArray*,
            URLsForDirectory_inDomains_,
            NSInteger, NSInteger);
 #define    URLsForDirectory_inDomains_(...) \
     _MAC_P(URLsForDirectory_inDomains_, ##__VA_ARGS__)
 
-_MAC_F(0, "URLs", CFArrayRef,
+_MAC_F(0, "URLs", NSArray*,
            URLs);
 #define    URLs(...) \
     _MAC_P(URLs, ##__VA_ARGS__)
@@ -887,7 +738,7 @@ _MAC_F(0, "setAutoenablesItems:", void,
 
 _MAC_F(0, "imageNamed:", NSImage*,
            imageNamed_,
-           CFStringRef);
+           NSString*);
 #define    imageNamed_(...) \
     _MAC_P(imageNamed_, ##__VA_ARGS__)
 
@@ -911,68 +762,68 @@ _MAC_F(0, "setSubmenu:", void,
 
 _MAC_F(0, "popUpMenuPositioningItem:atLocation:inView:", bool,
            popUpMenuPositioningItem_atLocation_inView_,
-           NSMenuItem*, CGPoint, NSView*);
+           NSMenuItem*, NSPoint, NSView*);
 #define    popUpMenuPositioningItem_atLocation_inView_(...) \
     _MAC_P(popUpMenuPositioningItem_atLocation_inView_, ##__VA_ARGS__)
 
 _MAC_F(0, "initWithCGImage:size:", NSImage*,
            initWithCGImage_size_,
-           CGImageRef, CGPoint);
+           CGImageRef, NSPoint);
 #define    initWithCGImage_size_(...) \
     _MAC_P(initWithCGImage_size_, ##__VA_ARGS__)
 
 _MAC_F(0, "initWithContentRect:styleMask:backing:defer:", NSWindow*,
            initWithContentRect_styleMask_backing_defer_,
-           CGRect, NSInteger, NSInteger, bool);
+           NSRect, NSInteger, NSInteger, bool);
 #define    initWithContentRect_styleMask_backing_defer_(...) \
     _MAC_P(initWithContentRect_styleMask_backing_defer_, ##__VA_ARGS__)
 
 _MAC_F(0, "initWithTitle:action:keyEquivalent:", NSMenuItem*,
            initWithTitle_action_keyEquivalent_,
-           CFStringRef, SEL, CFStringRef);
+           NSString*, SEL, NSString*);
 #define    initWithTitle_action_keyEquivalent_(...) \
     _MAC_P(initWithTitle_action_keyEquivalent_, ##__VA_ARGS__)
 
-_MAC_F(4, "contentRectForFrameRect:", CGRect,
+_MAC_F(4, "contentRectForFrameRect:", NSRect,
            contentRectForFrameRect_,
-           CGRect);
+           NSRect);
 #define    contentRectForFrameRect_(...) \
     _MAC_P(contentRectForFrameRect_, ##__VA_ARGS__)
 
-_MAC_F(4, "frameRectForContentRect:", CGRect,
+_MAC_F(4, "frameRectForContentRect:", NSRect,
            frameRectForContentRect_,
-           CGRect);
+           NSRect);
 #define    frameRectForContentRect_(...) \
     _MAC_P(frameRectForContentRect_, ##__VA_ARGS__)
 
-_MAC_F(4, "visibleFrame", CGRect,
+_MAC_F(4, "visibleFrame", NSRect,
            visibleFrame);
 #define    visibleFrame(...) \
     _MAC_P(visibleFrame, ##__VA_ARGS__)
 
-_MAC_F(4, "frame", CGRect,
+_MAC_F(4, "frame", NSRect,
            frame);
 #define    frame(...) \
     _MAC_P(frame, ##__VA_ARGS__)
 
 _MAC_F(0, "setFrame:", void,
            setFrame_,
-           CGRect);
+           NSRect);
 #define    setFrame_(...) \
     _MAC_P(setFrame_, ##__VA_ARGS__)
 
 _MAC_F(0, "setFrame:display:animate:", void,
            setFrame_display_animate_,
-           CGRect, bool, bool);
+           NSRect, bool, bool);
 #define    setFrame_display_animate_(...) \
     _MAC_P(setFrame_display_animate_, ##__VA_ARGS__)
 
-_MAC_F(0, "characters", CFStringRef,
+_MAC_F(0, "characters", NSString*,
            characters);
 #define    characters(...) \
     _MAC_P(characters, ##__VA_ARGS__)
 
-_MAC_F(0, "charactersIgnoringModifiers", CFStringRef,
+_MAC_F(0, "charactersIgnoringModifiers", NSString*,
            charactersIgnoringModifiers);
 #define    charactersIgnoringModifiers(...) \
     _MAC_P(charactersIgnoringModifiers, ##__VA_ARGS__)
@@ -990,19 +841,19 @@ _MAC_F(0, "setInitialFirstResponder:", void,
 
 _MAC_F(0, "setMinSize:", void,
            setMinSize_,
-           CGSize);
+           NSSize);
 #define    setMinSize_(...) \
     _MAC_P(setMinSize_, ##__VA_ARGS__)
 
 _MAC_F(0, "setTitle:", void,
            setTitle_,
-           CFStringRef);
+           NSString*);
 #define    setTitle_(...) \
     _MAC_P(setTitle_, ##__VA_ARGS__)
 
 _MAC_F(0, "setStringValue:", void,
            setStringValue_,
-           CFStringRef);
+           NSString*);
 #define    setStringValue_(...) \
     _MAC_P(setStringValue_, ##__VA_ARGS__)
 
@@ -1099,7 +950,7 @@ _MAC_F(0, "setState:", void,
 
 _MAC_F(0, "setToolTip:", void,
            setToolTip_,
-           CFStringRef);
+           NSString*);
 #define    setToolTip_(...) \
     _MAC_P(setToolTip_, ##__VA_ARGS__)
 
@@ -1175,6 +1026,12 @@ _MAC_F(0, "setDrawsBackground:", void,
 #define    setDrawsBackground_(...) \
     _MAC_P(setDrawsBackground_, ##__VA_ARGS__)
 
+_MAC_F(0, "setScrollable:", void,
+           setScrollable_,
+           bool);
+#define    setScrollable_(...) \
+    _MAC_P(setScrollable_, ##__VA_ARGS__)
+
 _MAC_F(0, "statusItemWithLength:", NSStatusItem*,
            statusItemWithLength_,
            CGFloat);
@@ -1202,7 +1059,7 @@ _MAC_F(1, "thickness", CGFloat,
 #define    thickness(...) \
     _MAC_P(thickness, ##__VA_ARGS__)
 
-_MAC_F(2, "cellSize", CGSize,
+_MAC_F(2, "cellSize", NSSize,
            cellSize);
 #define    cellSize(...) \
     _MAC_P(cellSize, ##__VA_ARGS__)
@@ -1255,7 +1112,7 @@ _MAC_F(0, "isFlipped", bool,
 
 _MAC_F(0, "drawRect:", void,
            drawRect_,
-           CGRect);
+           NSRect);
 #define    drawRect_(...) \
     _MAC_P(drawRect_, ##__VA_ARGS__)
 
@@ -1281,7 +1138,7 @@ _MAC_F(0, "keyCode", unsigned short,
 #define    keyCode(...) \
     _MAC_P(keyCode, ##__VA_ARGS__)
 
-_MAC_F(2, "mouseLocation", CGPoint,
+_MAC_F(2, "mouseLocation", NSPoint,
            mouseLocation);
 #define    mouseLocation(...) \
     _MAC_P(mouseLocation, ##__VA_ARGS__)
@@ -1323,7 +1180,7 @@ _MAC_F(1, "systemFontSize", CGFloat,
 #define    systemFontSize(...) \
     _MAC_P(systemFontSize, ##__VA_ARGS__)
 
-_MAC_F(2, "maximumAdvancement", CGSize,
+_MAC_F(2, "maximumAdvancement", NSSize,
            maximumAdvancement);
 #define    maximumAdvancement(...) \
     _MAC_P(maximumAdvancement, ##__VA_ARGS__)
@@ -1359,19 +1216,25 @@ _MAC_F(0, "setWantsLayer:", void,
 
 _MAC_F(0, "scaleUnitSquareToSize:", void,
            scaleUnitSquareToSize_,
-           CGSize);
+           NSSize);
 #define    scaleUnitSquareToSize_(...) \
     _MAC_P(scaleUnitSquareToSize_, ##__VA_ARGS__)
 
+_MAC_F(0, "initWithString:", NSAttributedString*,
+           initWithString_,
+           NSString*);
+#define    initWithString_(...) \
+    _MAC_P(initWithString_, ##__VA_ARGS__)
+
 _MAC_F(0, "drawInRect:withAttributes:", void,
            drawInRect_withAttributes_,
-           CGRect, CFDictionaryRef);
+           NSRect, NSDictionary*);
 #define    drawInRect_withAttributes_(...) \
     _MAC_P(drawInRect_withAttributes_, ##__VA_ARGS__)
 
-_MAC_F(2, "sizeWithAttributes:", CGSize,
+_MAC_F(2, "sizeWithAttributes:", NSSize,
            sizeWithAttributes_,
-           CFDictionaryRef);
+           NSDictionary*);
 #define    sizeWithAttributes_(...) \
     _MAC_P(sizeWithAttributes_, ##__VA_ARGS__)
 
@@ -1381,7 +1244,7 @@ _MAC_F(0, "textDidChange:", void,
 #define    textDidChange_(...) \
     _MAC_P(textDidChange_, ##__VA_ARGS__)
 
-_MAC_F(0, "stringValue", CFStringRef,
+_MAC_F(0, "stringValue", NSString*,
            stringValue);
 #define    stringValue(...) \
     _MAC_P(stringValue, ##__VA_ARGS__)
@@ -1457,13 +1320,13 @@ _MAC_F(0, "setPartialStringValidationEnabled:", void,
 
 _MAC_F(0, "isPartialStringValid:newEditingString:errorDescription:", bool,
            isPartialStringValid_newEditingString_errorDescription_,
-           CFStringRef, CFStringRef, CFStringRef);
+           NSString*, NSString*, NSString*);
 #define    isPartialStringValid_newEditingString_errorDescription_(...) \
     _MAC_P(isPartialStringValid_newEditingString_errorDescription_, ##__VA_ARGS__)
 
 _MAC_F(0, "getObjectValue:forString:errorDescription:", bool,
            getObjectValue_forString_errorDescription_,
-           void**, CFStringRef, CFStringRef);
+           void**, NSString*, NSString*);
 #define    getObjectValue_forString_errorDescription_(...) \
     _MAC_P(getObjectValue_forString_errorDescription_, ##__VA_ARGS__)
 
@@ -1569,7 +1432,7 @@ _MAC_F(0, "initWithAttributes:", NSOpenGLPixelFormat*,
 
 _MAC_F(0, "initWithFrame:pixelFormat:", NSOpenGLView*,
            initWithFrame_pixelFormat_,
-           CGRect, NSOpenGLPixelFormat*);
+           NSRect, NSOpenGLPixelFormat*);
 #define    initWithFrame_pixelFormat_(...) \
     _MAC_P(initWithFrame_pixelFormat_, ##__VA_ARGS__)
 
@@ -1596,10 +1459,32 @@ _MAC_F(0, "setHasShadow:", void,
 #define    setHasShadow_(...) \
     _MAC_P(setHasShadow_, ##__VA_ARGS__)
 
+_MAC_F(0, "colorWithCGColor:", NSColor*,
+           colorWithCGColor_,
+           CGColorRef);
+#define    colorWithCGColor_(...) \
+    _MAC_P(colorWithCGColor_, ##__VA_ARGS__)
+
+_MAC_F(0, "placeholderTextColor", NSColor*,
+           placeholderTextColor);
+#define    placeholderTextColor(...) \
+    _MAC_P(placeholderTextColor, ##__VA_ARGS__)
+
+_MAC_F(0, "textColor", NSColor*,
+           textColor);
+#define    textColor(...) \
+    _MAC_P(textColor, ##__VA_ARGS__)
+
 _MAC_F(0, "clearColor", NSColor*,
            clearColor);
 #define    clearColor(...) \
     _MAC_P(clearColor, ##__VA_ARGS__)
+
+_MAC_F(0, "setTextColor:", void,
+           setTextColor_,
+           NSColor*);
+#define    setTextColor_(...) \
+    _MAC_P(setTextColor_, ##__VA_ARGS__)
 
 _MAC_F(0, "setBackgroundColor:", void,
            setBackgroundColor_,
@@ -1615,25 +1500,25 @@ _MAC_F(0, "postEvent:atStart:", void,
 
 _MAC_F(0, "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:", NSEvent*,
            otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_,
-           NSInteger, CGPoint, NSInteger, CGFloat, NSInteger, NSGraphicsContext*, short, NSInteger, NSInteger);
+           NSInteger, NSPoint, NSInteger, NSTimeInterval, NSInteger, NSGraphicsContext*, short, NSInteger, NSInteger);
 #define    otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(...) \
     _MAC_P(otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_, ##__VA_ARGS__)
 
 _MAC_F(0, "addButtonWithTitle:", NSButton*,
            addButtonWithTitle_,
-           CFStringRef);
+           NSString*);
 #define    addButtonWithTitle_(...) \
     _MAC_P(addButtonWithTitle_, ##__VA_ARGS__)
 
 _MAC_F(0, "setMessageText:", void,
            setMessageText_,
-           CFStringRef);
+           NSString*);
 #define    setMessageText_(...) \
     _MAC_P(setMessageText_, ##__VA_ARGS__)
 
 _MAC_F(0, "setInformativeText:", void,
            setInformativeText_,
-           CFStringRef);
+           NSString*);
 #define    setInformativeText_(...) \
     _MAC_P(setInformativeText_, ##__VA_ARGS__)
 
@@ -1668,62 +1553,21 @@ _MAC_F(0, "setCanChooseFiles:", void,
 
 _MAC_F(0, "setAllowedFileTypes:", void,
            setAllowedFileTypes_,
-           CFArrayRef);
+           NSArray*);
 #define    setAllowedFileTypes_(...) \
     _MAC_P(setAllowedFileTypes_, ##__VA_ARGS__)
 
 _MAC_F(0, "setNameFieldStringValue:", void,
            setNameFieldStringValue_,
-           CFStringRef);
+           NSString*);
 #define    setNameFieldStringValue_(...) \
     _MAC_P(setNameFieldStringValue_, ##__VA_ARGS__)
 
 _MAC_F(0, "setDirectoryURL:", void,
            setDirectoryURL_,
-           CFURLRef);
+           NSURL*);
 #define    setDirectoryURL_(...) \
     _MAC_P(setDirectoryURL_, ##__VA_ARGS__)
-
-_MAC_F(0, "wantsBestResolutionOpenGLSurface", bool,
-           wantsBestResolutionOpenGLSurface);
-#define    wantsBestResolutionOpenGLSurface(...) \
-    _MAC_P(wantsBestResolutionOpenGLSurface, ##__VA_ARGS__)
-
-_MAC_F(2, "convertSizeToBacking:", CGSize,
-           convertSizeToBacking_,
-           CGSize);
-#define    convertSizeToBacking_(...) \
-    _MAC_P(convertSizeToBacking_, ##__VA_ARGS__)
-
-_MAC_F(2, "convertSizeFromBacking:", CGSize,
-           convertSizeFromBacking_,
-           CGSize);
-#define    convertSizeFromBacking_(...) \
-    _MAC_P(convertSizeFromBacking_, ##__VA_ARGS__)
-
-_MAC_F(2, "convertPointToBacking:", CGPoint,
-           convertPointToBacking_,
-           CGPoint);
-#define    convertPointToBacking_(...) \
-    _MAC_P(convertPointToBacking_, ##__VA_ARGS__)
-
-_MAC_F(2, "convertPointFromBacking:", CGPoint,
-           convertPointFromBacking_,
-           CGPoint);
-#define    convertPointFromBacking_(...) \
-    _MAC_P(convertPointFromBacking_, ##__VA_ARGS__)
-
-_MAC_F(4, "convertRectToBacking:", CGRect,
-           convertRectToBacking_,
-           CGRect);
-#define    convertRectToBacking_(...) \
-    _MAC_P(convertRectToBacking_, ##__VA_ARGS__)
-
-_MAC_F(4, "convertRectFromBacking:", CGRect,
-           convertRectFromBacking_,
-           CGRect);
-#define    convertRectFromBacking_(...) \
-    _MAC_P(convertRectFromBacking_, ##__VA_ARGS__)
 
 #undef _MAC_L
 #undef _MAC_L4
@@ -1733,6 +1577,217 @@ _MAC_F(4, "convertRectFromBacking:", CGRect,
 #undef _MAC_A0
 #undef _MAC_F
 #undef _MAC_T
+#undef _MAC_T2
+#undef _MAC_T1
+#undef _MAC_T0
+
+
+
+static struct {
+    Class uuid;
+    char *name;
+    long  icnt;
+} *_MAC_Subclasses = 0;
+
+
+
+/// MacOS versions
+
+#define MAC_10_05_PLUS (kCFCoreFoundationVersionNumber >=  476.00)
+#define MAC_10_06_PLUS (kCFCoreFoundationVersionNumber >=  550.00)
+#define MAC_10_07_PLUS (kCFCoreFoundationVersionNumber >=  635.00)
+#define MAC_10_08_PLUS (kCFCoreFoundationVersionNumber >=  744.00)
+#define MAC_10_09_PLUS (kCFCoreFoundationVersionNumber >=  855.11)
+#define MAC_10_10_PLUS (kCFCoreFoundationVersionNumber >= 1151.16)
+#define MAC_10_11_PLUS (kCFCoreFoundationVersionNumber >= 1253.00)
+
+
+
+/// template for handler function prototypes; names "self" and "_cmd" taken from ObjC docs:
+/// https://developer.apple.com/documentation/objectivec/1418901-class_addmethod?language=objc
+
+#define MAC_Handler(func, ...) func(void *self, SEL _cmd, ##__VA_ARGS__)
+
+
+
+/// class instance variable management
+
+#define MAC_GetIvar(inst, name, data) object_getInstanceVariable((void*)(inst), name, (void**)(data))
+#define MAC_SetIvar(inst, name, data) object_setInstanceVariable((void*)(inst), name, (void*)(data))
+
+
+
+/// NSString management
+
+__attribute__((unused))
+static char *MAC_LoadString(NSString *cfsr) {
+    CFIndex slen, size;
+    uint8_t *retn = 0;
+
+    if (CFStringGetBytes(cfsr, CFRangeMake(0, slen = CFStringGetLength(cfsr)),
+                         kCFStringEncodingUTF8, '?', false, 0, 0, &size) > 0)
+        CFStringGetBytes(cfsr, CFRangeMake(0, slen), kCFStringEncodingUTF8,
+                         '?', false, retn = calloc(1, 1 + size), size, 0);
+    return (char*)retn;
+}
+__attribute__((unused))
+static NSString *MAC_MakeString(char *text) {
+    CFStringRef retn = CFStringCreateWithBytes
+                           (0, (text)? (uint8_t*)text : (uint8_t*)"", (text)?
+                            strlen(text) : 0, kCFStringEncodingUTF8, false);
+    return (NSString*)retn;
+}
+#define MAC_FreeString(s) CFRelease(s)
+
+
+
+/// When the official documentation states that there is an NSDictionary to
+/// be created with some NS<Whatever> values used as keys, remember that in
+/// the CoreFoundation framework their equivalents are named kCT<Whatever>.
+/// If there are none in CF, just import them: "extern void *NS<Whatever>".
+
+#define MAC_MakeDict(k, ...) _MAC_MakeDict(k, ##__VA_ARGS__, nil, nil)
+__attribute__((unused))
+static NSDictionary *_MAC_MakeDict(NSString *key1, ...) {
+    CFDictionaryRef retn = 0;
+    NSString *iter;
+    va_list list;
+    long size;
+
+    NSString **keys;
+    void **vals;
+
+    size = 0;
+    iter = key1;
+    va_start(list, key1);
+    while (iter) {
+        va_arg(list, void*);
+        iter = va_arg(list, NSString*);
+        size++;
+    }
+    va_end(list);
+    if (size) {
+        keys = malloc(size * sizeof(*keys));
+        vals = malloc(size * sizeof(*vals));
+        size = 0;
+        iter = key1;
+        va_start(list, key1);
+        while (iter) {
+            keys[size] = iter;
+            vals[size++] = va_arg(list, void*);
+            iter = va_arg(list, NSString*);
+        }
+        va_end(list);
+        retn = CFDictionaryCreate(0, (const void**)keys, (const void**)vals,
+                                  size, &kCFTypeDictionaryKeyCallBacks,
+                                        &kCFTypeDictionaryValueCallBacks);
+        free(vals);
+        free(keys);
+    }
+    return (NSDictionary*)retn;
+}
+#define MAC_FreeDict(d) CFRelease(d)
+
+
+
+__attribute__((unused))
+static CFRunLoopTimerRef MAC_MakeTimer(unsigned time,
+                                       CFRunLoopTimerCallBack func,
+                                       void *data) {
+    extern NSString *NSRunLoopCommonModes;
+    CFRunLoopTimerContext ctxt = {0, data};
+    CFRunLoopTimerRef retn =
+        CFRunLoopTimerCreate(0, CFAbsoluteTimeGetCurrent(),
+                             0.001 * time, 0, 0, func, &ctxt);
+
+    CFRunLoopAddTimer(CFRunLoopGetCurrent(), retn, NSRunLoopCommonModes);
+    return retn;
+}
+#define MAC_FreeTimer(t) CFRunLoopTimerInvalidate(t)
+
+
+
+__attribute__((unused))
+static CFRunLoopObserverRef MAC_MakeIdleFunc(CFRunLoopObserverCallBack func,
+                                             void *data) {
+    extern NSString *NSRunLoopCommonModes;
+    CFRunLoopObserverContext ctxt = {0, data};
+    CFRunLoopObserverRef retn =
+        CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                                true, 0, func, &ctxt);
+
+    CFRunLoopAddObserver(CFRunLoopGetCurrent(), retn, NSRunLoopCommonModes);
+    return retn;
+}
+#define MAC_FreeIdleFunc(t) CFRunLoopObserverInvalidate(t)
+
+
+
+__attribute__((unused))
+static Class MAC_MakeClass(char *name, Class base, void **flds, void **mths) {
+    Class retn = 0;
+    long iter = 0;
+
+    for (; _MAC_Subclasses && _MAC_Subclasses[iter].name; iter++)
+        if (!strcmp(name, _MAC_Subclasses[iter].name)) {
+            retn = _MAC_Subclasses[iter].uuid;
+            if (base)
+                _MAC_Subclasses[iter].icnt++;
+            break;
+        }
+    if (!retn) {
+        retn = objc_allocateClassPair(base, name, 0);
+        _MAC_Subclasses = realloc(_MAC_Subclasses,
+                                 (iter + 2) * sizeof(*_MAC_Subclasses));
+        _MAC_Subclasses[iter] =
+            (typeof(*_MAC_Subclasses)){retn, strdup(name), 1};
+        _MAC_Subclasses[iter + 1].name = 0;
+
+        iter = -1;
+        /// adding fields
+        while (flds && flds[++iter])
+            class_addIvar(retn, (char*)flds[iter],
+                          sizeof(void*), (sizeof(void*) >= 8)? 3 : 2, 0);
+        iter = -2;
+        /// overloading methods
+        while (mths && mths[iter += 2])
+            class_addMethod(retn, (SEL)mths[iter], (IMP)mths[iter + 1], 0);
+
+        objc_registerClassPair(retn);
+    }
+    return retn;
+}
+#define MAC_LoadClass(n) MAC_MakeClass(n, (Class)0, (void**)0, (void**)0)
+#define MAC_TempArray(...) (void*[]){__VA_ARGS__, 0}
+
+
+
+__attribute__((unused))
+static void MAC_FreeClass(Class uuid) {
+    long iter, size = 0;
+
+    for (; _MAC_Subclasses && _MAC_Subclasses[size].name; size++);
+    for (iter = 0; iter < size; iter++)
+        if (uuid == _MAC_Subclasses[iter].uuid) {
+            _MAC_Subclasses[iter].icnt--;
+            if (!_MAC_Subclasses[iter].icnt) {
+                objc_disposeClassPair(_MAC_Subclasses[iter].uuid);
+                free(_MAC_Subclasses[iter].name);
+                if (iter < --size) {
+                    _MAC_Subclasses[iter] = _MAC_Subclasses[size];
+                    iter = size;
+                }
+                _MAC_Subclasses[iter].name = 0;
+            }
+            break;
+        }
+    if (_MAC_Subclasses && !_MAC_Subclasses[0].name) {
+        free(_MAC_Subclasses);
+        _MAC_Subclasses = 0;
+    }
+}
+
+
 
 extern void NSBeep();
 extern void CGSSetConnectionProperty(int, int, CFStringRef, CFBooleanRef);
