@@ -1542,6 +1542,16 @@ _MAC_F(0, "colorWithCGColor:", NSColor*,
 #define    colorWithCGColor_(...) \
     _MAC_P(colorWithCGColor_, ##__VA_ARGS__)
 
+_MAC_F(0, "controlTextColor", NSColor*,
+           controlTextColor);
+#define    controlTextColor(...) \
+    _MAC_P(controlTextColor, ##__VA_ARGS__)
+
+_MAC_F(0, "disabledControlTextColor", NSColor*,
+           disabledControlTextColor);
+#define    disabledControlTextColor(...) \
+    _MAC_P(disabledControlTextColor, ##__VA_ARGS__)
+
 _MAC_F(0, "placeholderTextColor", NSColor*,
            placeholderTextColor);
 #define    placeholderTextColor(...) \
