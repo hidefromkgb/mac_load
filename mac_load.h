@@ -401,6 +401,7 @@ static Class __ ##a() { static Class what = 0;                      \
 #endif
 
 typedef double NSTimeInterval;
+typedef CFRange NSRange;
 typedef CGPoint NSPoint;
 typedef CGSize NSSize;
 typedef CGRect NSRect;
@@ -556,6 +557,18 @@ typedef CGRect NSRect;
  _MAC_T(NSTableColumn);
 #define NSTableColumn() \
       __NSTableColumn()
+
+ _MAC_T(NSLayoutManager);
+#define NSLayoutManager() \
+      __NSLayoutManager()
+
+ _MAC_T(NSTextContainer);
+#define NSTextContainer() \
+      __NSTextContainer()
+
+ _MAC_T(NSTextStorage);
+#define NSTextStorage() \
+      __NSTextStorage()
 
  _MAC_T(NSColor);
 #define NSColor() \
@@ -766,9 +779,31 @@ _MAC_F(0, "popUpMenuPositioningItem:atLocation:inView:", bool,
 #define    popUpMenuPositioningItem_atLocation_inView_(...) \
     _MAC_P(popUpMenuPositioningItem_atLocation_inView_, ##__VA_ARGS__)
 
+_MAC_F(0, "lockFocus", void,
+           lockFocus);
+#define    lockFocus(...) \
+    _MAC_P(lockFocus, ##__VA_ARGS__)
+
+_MAC_F(0, "unlockFocus", void,
+           unlockFocus);
+#define    unlockFocus(...) \
+    _MAC_P(unlockFocus, ##__VA_ARGS__)
+
+_MAC_F(0, "CGImageForProposedRect:context:hints:", CGImageRef,
+           CGImageForProposedRect_context_hints_,
+           NSRect*, NSGraphicsContext*, NSDictionary*);
+#define    CGImageForProposedRect_context_hints_(...) \
+    _MAC_P(CGImageForProposedRect_context_hints_, ##__VA_ARGS__)
+
+_MAC_F(0, "initWithSize:", NSImage*,
+           initWithSize_,
+           NSSize);
+#define    initWithSize_(...) \
+    _MAC_P(initWithSize_, ##__VA_ARGS__)
+
 _MAC_F(0, "initWithCGImage:size:", NSImage*,
            initWithCGImage_size_,
-           CGImageRef, NSPoint);
+           CGImageRef, NSSize);
 #define    initWithCGImage_size_(...) \
     _MAC_P(initWithCGImage_size_, ##__VA_ARGS__)
 
@@ -1220,11 +1255,53 @@ _MAC_F(0, "scaleUnitSquareToSize:", void,
 #define    scaleUnitSquareToSize_(...) \
     _MAC_P(scaleUnitSquareToSize_, ##__VA_ARGS__)
 
-_MAC_F(0, "initWithString:", NSAttributedString*,
+_MAC_F(0, "addAttribute:value:range:", void,
+           addAttribute_value_range_,
+           NSString*, id, NSRange);
+#define    addAttribute_value_range_(...) \
+    _MAC_P(addAttribute_value_range_, ##__VA_ARGS__)
+
+_MAC_F(0, "initWithString:", NSTextStorage*,
            initWithString_,
            NSString*);
 #define    initWithString_(...) \
     _MAC_P(initWithString_, ##__VA_ARGS__)
+
+_MAC_F(0, "initWithContainerSize:", NSTextContainer*,
+           initWithContainerSize_,
+           NSSize);
+#define    initWithContainerSize_(...) \
+    _MAC_P(initWithContainerSize_, ##__VA_ARGS__)
+
+_MAC_F(0, "addTextContainer:", void,
+           addTextContainer_,
+           NSTextContainer*);
+#define    addTextContainer_(...) \
+    _MAC_P(addTextContainer_, ##__VA_ARGS__)
+
+_MAC_F(0, "addLayoutManager:", void,
+           addLayoutManager_,
+           NSLayoutManager*);
+#define    addLayoutManager_(...) \
+    _MAC_P(addLayoutManager_, ##__VA_ARGS__)
+
+_MAC_F(0, "setLineFragmentPadding:", void,
+           setLineFragmentPadding_,
+           CGFloat);
+#define    setLineFragmentPadding_(...) \
+    _MAC_P(setLineFragmentPadding_, ##__VA_ARGS__)
+
+_MAC_F(0, "glyphRangeForTextContainer:", void,
+           glyphRangeForTextContainer_,
+           NSTextContainer*);
+#define    glyphRangeForTextContainer_(...) \
+    _MAC_P(glyphRangeForTextContainer_, ##__VA_ARGS__)
+
+_MAC_F(4, "usedRectForTextContainer:", NSRect,
+           usedRectForTextContainer_,
+           NSTextContainer*);
+#define    usedRectForTextContainer_(...) \
+    _MAC_P(usedRectForTextContainer_, ##__VA_ARGS__)
 
 _MAC_F(0, "drawInRect:withAttributes:", void,
            drawInRect_withAttributes_,
@@ -1829,6 +1906,9 @@ static void MAC_FreeClass(Class uuid) {
 }
 
 
+
+#define NSFontAttributeName           ((NSString*)kCTFontAttributeName)
+#define NSParagraphStyleAttributeName ((NSString*)kCTParagraphStyleAttributeName)
 
 extern void NSBeep();
 extern void CGSSetConnectionProperty(int, int, CFStringRef, CFBooleanRef);
