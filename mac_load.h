@@ -458,6 +458,14 @@ typedef CGRect NSRect;
 #define NSAutoreleasePool() \
       __NSAutoreleasePool()
 
+ _MAC_T(NSNotificationCenter);
+#define NSNotificationCenter() \
+      __NSNotificationCenter()
+
+ _MAC_T(NSNotification);
+#define NSNotification() \
+      __NSNotification()
+
  _MAC_T(NSBundle);
 #define NSBundle() \
       __NSBundle()
@@ -549,6 +557,10 @@ typedef CGRect NSRect;
  _MAC_T(NSScrollView);
 #define NSScrollView() \
       __NSScrollView()
+
+ _MAC_T(NSClipView);
+#define NSClipView() \
+      __NSClipView()
 
  _MAC_T(NSTableView);
 #define NSTableView() \
@@ -955,6 +967,51 @@ _MAC_F(0, "setDefaultButtonCell:", void,
            NSButtonCell*);
 #define    setDefaultButtonCell_(...) \
     _MAC_P(setDefaultButtonCell_, ##__VA_ARGS__)
+
+_MAC_F(0, "setPostsBoundsChangedNotifications:", void,
+           setPostsBoundsChangedNotifications_,
+           bool);
+#define    setPostsBoundsChangedNotifications_(...) \
+    _MAC_P(setPostsBoundsChangedNotifications_, ##__VA_ARGS__)
+
+_MAC_F(0, "setPostsFrameChangedNotifications:", void,
+           setPostsFrameChangedNotifications_,
+           bool);
+#define    setPostsFrameChangedNotifications_(...) \
+    _MAC_P(setPostsFrameChangedNotifications_, ##__VA_ARGS__)
+
+_MAC_F(0, "addObserver:selector:name:object:", void,
+           addObserver_selector_name_object_,
+           id, SEL, NSString*, id);
+#define    addObserver_selector_name_object_(...) \
+    _MAC_P(addObserver_selector_name_object_, ##__VA_ARGS__)
+
+_MAC_F(0, "removeObserver:name:object:", void,
+           removeObserver_name_object_,
+           id, NSString*, id);
+#define    removeObserver_name_object_(...) \
+    _MAC_P(removeObserver_name_object_, ##__VA_ARGS__)
+
+_MAC_F(0, "scrollToPoint:", void,
+           scrollToPoint_,
+           NSPoint);
+#define    scrollToPoint_(...) \
+    _MAC_P(scrollToPoint_, ##__VA_ARGS__)
+
+_MAC_F(0, "defaultCenter", NSNotificationCenter*,
+           defaultCenter);
+#define    defaultCenter(...) \
+    _MAC_P(defaultCenter, ##__VA_ARGS__)
+
+_MAC_F(4, "documentVisibleRect", NSRect,
+           documentVisibleRect);
+#define    documentVisibleRect(...) \
+    _MAC_P(documentVisibleRect, ##__VA_ARGS__)
+
+_MAC_F(0, "contentView", NSClipView*,
+           contentView);
+#define    contentView(...) \
+    _MAC_P(contentView, ##__VA_ARGS__)
 
 _MAC_F(0, "verticalScroller", NSView*,
            verticalScroller);
@@ -1719,6 +1776,18 @@ static struct {
 
 
 
+#define NSFontAttributeName           ((NSString*)kCTFontAttributeName)
+#define NSParagraphStyleAttributeName ((NSString*)kCTParagraphStyleAttributeName)
+extern NSString *NSViewBoundsDidChangeNotification;
+extern NSString *NSViewFrameDidChangeNotification;
+extern NSString *NSRunLoopCommonModes;
+
+extern void NSBeep();
+extern void CGSSetConnectionProperty(int, int, CFStringRef, CFBooleanRef);
+extern int _CGSDefaultConnection();
+
+
+
 /// MacOS versions
 
 #define MAC_10_05_PLUS (kCFCoreFoundationVersionNumber >=  476.00)
@@ -1766,6 +1835,9 @@ static NSString *MAC_MakeString(char *text) {
     return (NSString*)retn;
 }
 #define MAC_FreeString(s) CFRelease(s)
+/// Constant NSString* creator.
+/// If you`re using it, be sure to compile with -fconstant-cfstrings!!!
+#define MAC_ConstString(s) ((NSString*)CFSTR(s))
 
 
 
@@ -1822,7 +1894,6 @@ __attribute__((unused))
 static CFRunLoopTimerRef MAC_MakeTimer(unsigned time,
                                        CFRunLoopTimerCallBack func,
                                        void *data) {
-    extern NSString *NSRunLoopCommonModes;
     CFRunLoopTimerContext ctxt = {0, data};
     CFRunLoopTimerRef retn =
         CFRunLoopTimerCreate(0, CFAbsoluteTimeGetCurrent(),
@@ -1838,7 +1909,6 @@ static CFRunLoopTimerRef MAC_MakeTimer(unsigned time,
 __attribute__((unused))
 static CFRunLoopObserverRef MAC_MakeIdleFunc(CFRunLoopObserverCallBack func,
                                              void *data) {
-    extern NSString *NSRunLoopCommonModes;
     CFRunLoopObserverContext ctxt = {0, data};
     CFRunLoopObserverRef retn =
         CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
@@ -1914,15 +1984,6 @@ static void MAC_FreeClass(Class uuid) {
         _MAC_Subclasses = 0;
     }
 }
-
-
-
-#define NSFontAttributeName           ((NSString*)kCTFontAttributeName)
-#define NSParagraphStyleAttributeName ((NSString*)kCTParagraphStyleAttributeName)
-
-extern void NSBeep();
-extern void CGSSetConnectionProperty(int, int, CFStringRef, CFBooleanRef);
-extern int _CGSDefaultConnection();
 
 #ifdef __cplusplus
 }
