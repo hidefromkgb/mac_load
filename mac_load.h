@@ -1593,6 +1593,12 @@ _MAC_F(0, "setHasShadow:", void,
 #define    setHasShadow_(...) \
     _MAC_P(setHasShadow_, ##__VA_ARGS__)
 
+_MAC_F(0, "colorWithDeviceRed:green:blue:alpha:", NSColor*,
+           colorWithDeviceRed_green_blue_alpha_,
+           CGFloat, CGFloat, CGFloat, CGFloat);
+#define    colorWithDeviceRed_green_blue_alpha_(...) \
+    _MAC_P(colorWithDeviceRed_green_blue_alpha_, ##__VA_ARGS__)
+
 _MAC_F(0, "colorWithCGColor:", NSColor*,
            colorWithCGColor_,
            CGColorRef);
@@ -1776,8 +1782,10 @@ static struct {
 
 
 
-#define NSFontAttributeName           ((NSString*)kCTFontAttributeName)
-#define NSParagraphStyleAttributeName ((NSString*)kCTParagraphStyleAttributeName)
+extern NSString *NSFontAttributeName;
+extern NSString *NSParagraphStyleAttributeName;
+extern NSString *NSForegroundColorAttributeName;
+extern NSString *NSBackgroundColorAttributeName;
 extern NSString *NSViewBoundsDidChangeNotification;
 extern NSString *NSViewFrameDidChangeNotification;
 extern NSString *NSRunLoopCommonModes;
