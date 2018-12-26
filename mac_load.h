@@ -450,6 +450,10 @@ typedef CGRect NSRect;
 #define NSUserDefaults() \
       __NSUserDefaults()
 
+ _MAC_T(NSRunLoop);
+#define NSRunLoop() \
+      __NSRunLoop()
+
  _MAC_T(NSApplication);
 #define NSApplication() \
       __NSApplication()
@@ -1653,6 +1657,17 @@ _MAC_F(0, "otherEventWithType:location:modifierFlags:timestamp:windowNumber:cont
            NSInteger, NSPoint, NSInteger, NSTimeInterval, NSInteger, NSGraphicsContext*, short, NSInteger, NSInteger);
 #define    otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(...) \
     _MAC_P(otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_, ##__VA_ARGS__)
+
+_MAC_F(0, "performSelector:target:argument:order:modes:", void,
+           performSelector_target_argument_order_modes_,
+           SEL, id, id, NSUInteger, NSArray*);
+#define    performSelector_target_argument_order_modes_(...) \
+    _MAC_P(performSelector_target_argument_order_modes_, ##__VA_ARGS__)
+
+_MAC_F(0, "currentRunLoop", NSRunLoop*,
+           currentRunLoop);
+#define    currentRunLoop(...) \
+    _MAC_P(currentRunLoop, ##__VA_ARGS__)
 
 _MAC_F(0, "addButtonWithTitle:", NSButton*,
            addButtonWithTitle_,
