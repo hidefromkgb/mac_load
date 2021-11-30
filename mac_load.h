@@ -338,57 +338,108 @@ enum {
 
 
 
-#define _MAC_L(c, ...) \
-_MAC_L4(c,1,0,,,,,,,,,,,,,##__VA_ARGS__) _MAC_L4(c,0,1,,,,,,,,,##__VA_ARGS__) \
-_MAC_L4(c,0,2,,,,,        ##__VA_ARGS__) _MAC_L4(c,0,3,        ##__VA_ARGS__)
-
-#define _MAC_L4(c, f, n, ...) \
-_MAC_L3(c,f,n##0,,,,__VA_ARGS__) _MAC_L3(c,0,n##1,,,__VA_ARGS__) \
-_MAC_L3(c,0,n##2,,  __VA_ARGS__) _MAC_L3(c,0,n##3,  __VA_ARGS__)
+// c - concatenator/sequencer; f - function
+#define _MAC_L(c, f, ...) c( \
+c(c(_MAC_L4(c,f,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,__VA_ARGS__),   \
+    _MAC_L4(c,f,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,        __VA_ARGS__)),  \
+  c(_MAC_L4(c,f,2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,                __VA_ARGS__),   \
+    _MAC_L4(c,f,3,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,                        __VA_ARGS__))), \
+c(c(_MAC_L4(c,f,4,,,,,,,,,,,,,,,,,,,,,,,,,                                __VA_ARGS__),   \
+    _MAC_L4(c,f,5,,,,,,,,,,,,,,,,,                                        __VA_ARGS__)),  \
+  c(_MAC_L4(c,f,6,,,,,,,,,                                                __VA_ARGS__),   \
+    _MAC_L4(c,f,7,                                                        __VA_ARGS__))))
+//               ^1      ^8      ^16     ^24     ^32     ^40     ^48     ^56
+#define _MAC_L4(c, f, i, ...) c( \
+c(c(_MAC_L3(f,0,i,0,,,,,,,,__VA_ARGS__), _MAC_L3(f,1,i,1,,,,,,,__VA_ARGS__)),  \
+  c(_MAC_L3(f,0,i,2,,,,,,  __VA_ARGS__), _MAC_L3(f,1,i,3,,,,,  __VA_ARGS__))), \
+c(c(_MAC_L3(f,0,i,4,,,,    __VA_ARGS__), _MAC_L3(f,1,i,5,,,    __VA_ARGS__)),  \
+  c(_MAC_L3(f,0,i,6,,      __VA_ARGS__), _MAC_L3(f,1,i,7,      __VA_ARGS__))))
 
 #define _MAC_L3(...) _MAC_L2(__VA_ARGS__, \
-1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,  0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, )
+1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,  1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, \
+1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,  1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, \
+0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, \
+0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, )
 
-#define _MAC_L2(c, f, \
-n00,n01,n02,n03, n04,n05,n06,n07, n08,n09,n0A,n0B, n0C,n0D,n0E,n0F, \
+// p - parity: 0 = even (0th, 2nd, ...), 1 = odd (1st, 3rd, ...)
+// a00 - target argument; i##i00 - unique pseudonumeric index for a00
+#define _MAC_L2(f, p, i, \
+i00,i01,i02,i03, i04,i05,i06,i07, i08,i09,i0A,i0B, i0C,i0D,i0E,i0F, \
+i10,i11,i12,i13, i14,i15,i16,i17, i18,i19,i1A,i1B, i1C,i1D,i1E,i1F, \
+i20,i21,i22,i23, i24,i25,i26,i27, i28,i29,i2A,i2B, i2C,i2D,i2E,i2F, \
+i30,i31,i32,i33, i34,i35,i36,i37, i38,i39,i3A,i3B, i3C,i3D,i3E,i3F, \
 a00,a01,a02,a03, a04,a05,a06,a07, a08,a09,a0A,a0B, a0C,a0D,a0E,a0F, \
-s, ...) _MAC_L##s(c, f, n00, a00)
+a10,a11,a12,a13, a14,a15,a16,a17, a18,a19,a1A,a1B, a1C,a1D,a1E,a1F, \
+a20,a21,a22,a23, a24,a25,a26,a27, a28,a29,a2A,a2B, a2C,a2D,a2E,a2F, \
+a30,a31,a32,a33, a34,a35,a36,a37, a38,a39,a3A,a3B, a3C,a3D,a3E,a3F, \
+z, ...) _MAC_L##z(f, p, i##i00, a00)
 
-#define _MAC_L1(c, f, n, a) c##f(n, a)
-#define _MAC_L0(c, f, n, a)
+#define _MAC_L1(f, p, i, a) f##p(i, a)
+#define _MAC_L0(f, p, i, a)
 
-#define _MAC_C(a, b) __ ##a ##b
-#define _MAC_S(a, b) _MAC_C(a, b)
-#define _MAC_N(n, a) _
-#define _MAC_P(n, ...) _MAC_S(_MAC_L3(_MAC_N,, ,,,, ,,,, ,,,, ,,,, \
-                                      ##__VA_ARGS__), n)(__VA_ARGS__)
+#define _MAC_TYPE_ARG0(i, a)
+#define _MAC_TYPE_ARG1(i, a) , a _##i
+#define _MAC_ONLY_ARG0(i, a)
+#define _MAC_ONLY_ARG1(i, a) , _##i
+#define _MAC_FUNC_LEX0(i, a) a
+#define _MAC_FUNC_LEX1(i, a) _
+#define _MAC_FUNC_STR0(i, a) #a
+#define _MAC_FUNC_STR1(i, a) ":"
 
-#define _MAC_P1(n, a) , a _##n
-#define _MAC_P0(n, a) _MAC_P1(n, a)
-#define _MAC_A1(n, a) _MAC_P1(n,  )
-#define _MAC_A0(n, a) _MAC_P0(n,  )
+#define _MAC_CAT0(a, b) a##b
+#define _MAC_CAT(a, b) _MAC_CAT0(a, b)
+#define _MAC_SEQ(a, b) a b
 
-#define _MAC_F(tnfv, text, retn, name, ...) __attribute__((unused)) \
-static SEL __ ##name() { static SEL what = 0;                       \
-    if (!what) what = sel_registerName(text); return what;          \
-} __attribute__((unused))                                           \
-static retn ___ ##name(void *inst _MAC_L(_MAC_P, ##__VA_ARGS__)) {  \
-    retn (*func)(void*, SEL, ##__VA_ARGS__) =                       \
-         (tnfv < 4)? (tnfv != 1)? (void*)objc_msgSend               \
-                                : (void*)objc_msgSend_fpret         \
-                                : (void*)objc_msgSend_stret;        \
-    return func(inst, __ ##name() _MAC_L(_MAC_A, ##__VA_ARGS__));   \
+// this is needed to get selectors or classes by name
+#define _(callable) _MAC_CAT(__, callable)()
+
+// these are needed to declare functions
+#define _MAC_F(type, retn, ...) __attribute__((unused)) static                 \
+SEL _(_MAC_L(_MAC_CAT, _MAC_FUNC_LEX, __VA_ARGS__)) {                          \
+    static SEL what = 0; if (!what) what = sel_registerName(                   \
+        _MAC_L(_MAC_SEQ, _MAC_FUNC_STR, __VA_ARGS__)); return what;            \
+} __attribute__((unused)) static inline                                        \
+retn _MAC_L(_MAC_CAT, _MAC_FUNC_LEX, __VA_ARGS__)                              \
+    (void *inst _MAC_L(_MAC_SEQ, _MAC_TYPE_ARG, __VA_ARGS__)) {                \
+    return ((retn (*)(void*, SEL                                               \
+        _MAC_L(_MAC_SEQ, _MAC_TYPE_ARG, __VA_ARGS__)))objc_msgSend##type)      \
+        (inst, _(_MAC_L(_MAC_CAT, _MAC_FUNC_LEX, __VA_ARGS__))                 \
+                 _MAC_L(_MAC_SEQ, _MAC_ONLY_ARG, __VA_ARGS__));                \
+} __attribute__((unused)) static inline                                        \
+retn _MAC_CAT(super_, _MAC_L(_MAC_CAT, _MAC_FUNC_LEX, __VA_ARGS__))            \
+    (void *inst _MAC_L(_MAC_SEQ, _MAC_TYPE_ARG, __VA_ARGS__)) {                \
+    struct objc_super s = {inst, class_getSuperclass(object_getClass(inst))};  \
+    return ((retn (*)(struct objc_super*, SEL                                  \
+        _MAC_L(_MAC_SEQ, _MAC_TYPE_ARG, __VA_ARGS__)))objc_msgSendSuper##type) \
+        (&s, _(_MAC_L(_MAC_CAT, _MAC_FUNC_LEX, __VA_ARGS__))                   \
+               _MAC_L(_MAC_SEQ, _MAC_ONLY_ARG, __VA_ARGS__));                  \
 }
+#define _MAC_F0(retn, ...) _MAC_F(      , retn, __VA_ARGS__)
+#define _MAC_FF(retn, ...) _MAC_F(_fpret, retn, __VA_ARGS__)
+#define _MAC_FS(retn, ...) _MAC_F(_stret, retn, __VA_ARGS__)
+// not sure if this is correct
+#define objc_msgSendSuper_fpret objc_msgSendSuper
 
+// these are needed to declare types
 #define _MAC_T(...) _MAC_T2(__VA_ARGS__, 1, 0)
-#define _MAC_T2(a, b, n, ...) __attribute__((unused))               \
-static Class __ ##a() { static Class what = 0;                      \
-    if (!what) what = (Class)objc_getClass(#a); return what;        \
+#define _MAC_T2(a, b, n, ...) __attribute__((unused)) static \
+Class _(a) { static Class what = 0;                          \
+    if (!what) what = (Class)objc_getClass(#a); return what; \
 } typedef struct _MAC_T##n(a, b) a
 #define _MAC_T1(a, b) b
 #define _MAC_T0(a, b) a
 
 
+
+/// Toll-free bridged types
+
+_MAC_T(NSArray, __CFArray);
+_MAC_T(NSString, __CFString);
+_MAC_T(NSAttributedString, __CFAttributedString);
+_MAC_T(NSDictionary, __CFDictionary);
+_MAC_T(NSTimer, __CFRunLoopTimer);
+_MAC_T(NSURL, __CFURL);
+_MAC_T(NSFont, __CTFont);
 
 /// Regular types
 
@@ -406,1382 +457,332 @@ typedef CGPoint NSPoint;
 typedef CGSize NSSize;
 typedef CGRect NSRect;
 
-
-
-/// Toll-free bridged types
-
- _MAC_T(NSArray, __CFArray);
-#define NSArray() \
-      __NSArray()
-
- _MAC_T(NSString, __CFString);
-#define NSString() \
-      __NSString()
-
- _MAC_T(NSAttributedString, __CFAttributedString);
-#define NSAttributedString() \
-      __NSAttributedString()
-
- _MAC_T(NSDictionary, __CFDictionary);
-#define NSDictionary() \
-      __NSDictionary()
-
- _MAC_T(NSTimer, __CFRunLoopTimer);
-#define NSTimer() \
-      __NSTimer()
-
- _MAC_T(NSURL, __CFURL);
-#define NSURL() \
-      __NSURL()
-
- _MAC_T(NSFont, __CTFont);
-#define NSFont() \
-      __NSFont()
-
-
-
-/// Regular types
-
- _MAC_T(NSObject);
-#define NSObject() \
-      __NSObject()
-
- _MAC_T(NSUserDefaults);
-#define NSUserDefaults() \
-      __NSUserDefaults()
-
- _MAC_T(NSRunLoop);
-#define NSRunLoop() \
-      __NSRunLoop()
-
- _MAC_T(NSApplication);
-#define NSApplication() \
-      __NSApplication()
-
- _MAC_T(NSAutoreleasePool);
-#define NSAutoreleasePool() \
-      __NSAutoreleasePool()
-
- _MAC_T(NSNotificationCenter);
-#define NSNotificationCenter() \
-      __NSNotificationCenter()
-
- _MAC_T(NSNotification);
-#define NSNotification() \
-      __NSNotification()
-
- _MAC_T(NSBundle);
-#define NSBundle() \
-      __NSBundle()
-
- _MAC_T(NSEvent);
-#define NSEvent() \
-      __NSEvent()
-
- _MAC_T(NSMutableParagraphStyle);
-#define NSMutableParagraphStyle() \
-      __NSMutableParagraphStyle()
-
- _MAC_T(NSFileManager);
-#define NSFileManager() \
-      __NSFileManager()
-
- _MAC_T(NSOpenPanel);
-#define NSOpenPanel() \
-      __NSOpenPanel()
-
- _MAC_T(NSAlert);
-#define NSAlert() \
-      __NSAlert()
-
- _MAC_T(NSNumberFormatter);
-#define NSNumberFormatter() \
-      __NSNumberFormatter()
-
- _MAC_T(NSGraphicsContext);
-#define NSGraphicsContext() \
-      __NSGraphicsContext()
-
- _MAC_T(NSImage);
-#define NSImage() \
-      __NSImage()
-
- _MAC_T(NSMenu);
-#define NSMenu() \
-      __NSMenu()
-
- _MAC_T(NSMenuItem);
-#define NSMenuItem() \
-      __NSMenuItem()
-
- _MAC_T(NSStatusItem);
-#define NSStatusItem() \
-      __NSStatusItem()
-
- _MAC_T(NSStatusBar);
-#define NSStatusBar() \
-      __NSStatusBar()
-
- _MAC_T(NSScreen);
-#define NSScreen() \
-      __NSScreen()
-
- _MAC_T(NSWindow);
-#define NSWindow() \
-      __NSWindow()
-
- _MAC_T(NSTextField);
-#define NSTextField() \
-      __NSTextField()
-
- _MAC_T(NSButtonCell);
-#define NSButtonCell() \
-      __NSButtonCell()
-
- _MAC_T(NSButton);
-#define NSButton() \
-      __NSButton()
-
- _MAC_T(NSProgressIndicator);
-#define NSProgressIndicator() \
-      __NSProgressIndicator()
-
- _MAC_T(NSStepper);
-#define NSStepper() \
-      __NSStepper()
-
- _MAC_T(NSView);
-#define NSView() \
-      __NSView()
-
- _MAC_T(NSCell);
-#define NSCell() \
-      __NSCell()
-
- _MAC_T(NSScrollView);
-#define NSScrollView() \
-      __NSScrollView()
-
- _MAC_T(NSClipView);
-#define NSClipView() \
-      __NSClipView()
-
- _MAC_T(NSTableView);
-#define NSTableView() \
-      __NSTableView()
-
- _MAC_T(NSTableColumn);
-#define NSTableColumn() \
-      __NSTableColumn()
-
- _MAC_T(NSLayoutManager);
-#define NSLayoutManager() \
-      __NSLayoutManager()
-
- _MAC_T(NSTextContainer);
-#define NSTextContainer() \
-      __NSTextContainer()
-
- _MAC_T(NSTextStorage);
-#define NSTextStorage() \
-      __NSTextStorage()
-
- _MAC_T(NSColor);
-#define NSColor() \
-      __NSColor()
-
- _MAC_T(NSCursor);
-#define NSCursor() \
-      __NSCursor()
-
- _MAC_T(NSPanel);
-#define NSPanel() \
-      __NSPanel()
-
- _MAC_T(NSOpenGLView);
-#define NSOpenGLView() \
-      __NSOpenGLView()
-
- _MAC_T(NSOpenGLContext);
-#define NSOpenGLContext() \
-      __NSOpenGLContext()
-
- _MAC_T(NSOpenGLPixelFormat);
-#define NSOpenGLPixelFormat() \
-      __NSOpenGLPixelFormat()
-
-
-
-_MAC_F(0, "init", void*,
-           init);
-#define    init(...) \
-    _MAC_P(init, ##__VA_ARGS__)
-
-_MAC_F(0, "alloc", void*,
-           alloc);
-#define    alloc(...) \
-    _MAC_P(alloc, ##__VA_ARGS__)
-
-_MAC_F(0, "release", void*,
-           release);
-#define    release(...) \
-    _MAC_P(release, ##__VA_ARGS__)
-
-_MAC_F(0, "retain", void*,
-           retain);
-#define    retain(...) \
-    _MAC_P(retain, ##__VA_ARGS__)
-
-_MAC_F(0, "class", Class,
-           class);
-#define    class(...) \
-    _MAC_P(class, ##__VA_ARGS__)
-
-_MAC_F(0, "cell", NSCell*,
-           cell);
-#define    cell(...) \
-    _MAC_P(cell, ##__VA_ARGS__)
-
-_MAC_F(0, "button", NSButton*,
-           button);
-#define    button(...) \
-    _MAC_P(button, ##__VA_ARGS__)
-
-_MAC_F(0, "setAction:", void,
-           setAction_,
-           SEL);
-#define    setAction_(...) \
-    _MAC_P(setAction_, ##__VA_ARGS__)
-
-_MAC_F(0, "setTarget:", void,
-           setTarget_,
-           void*);
-#define    setTarget_(...) \
-    _MAC_P(setTarget_, ##__VA_ARGS__)
-
-_MAC_F(0, "setActivationPolicy:", bool,
-           setActivationPolicy_,
-           NSInteger);
-#define    setActivationPolicy_(...) \
-    _MAC_P(setActivationPolicy_, ##__VA_ARGS__)
-
-_MAC_F(0, "activateIgnoringOtherApps:", void,
-           activateIgnoringOtherApps_,
-           bool);
-#define    activateIgnoringOtherApps_(...) \
-    _MAC_P(activateIgnoringOtherApps_, ##__VA_ARGS__)
-
-_MAC_F(0, "sharedApplication", NSApplication*,
-           sharedApplication);
-#define    sharedApplication(...) \
-    _MAC_P(sharedApplication, ##__VA_ARGS__)
-
-_MAC_F(0, "run", void,
-           run);
-#define    run(...) \
-    _MAC_P(run, ##__VA_ARGS__)
-
-_MAC_F(0, "runModal", NSInteger,
-           runModal);
-#define    runModal(...) \
-    _MAC_P(runModal, ##__VA_ARGS__)
-
-_MAC_F(0, "stop:", void,
-           stop_,
-           void*);
-#define    stop_(...) \
-    _MAC_P(stop_, ##__VA_ARGS__)
-
-_MAC_F(0, "standardUserDefaults", NSUserDefaults*,
-           standardUserDefaults);
-#define    standardUserDefaults(...) \
-    _MAC_P(standardUserDefaults, ##__VA_ARGS__)
-
-_MAC_F(0, "objectForKey:", NSObject*,
-           objectForKey_,
-           NSString*);
-#define    objectForKey_(...) \
-    _MAC_P(objectForKey_, ##__VA_ARGS__)
-
-_MAC_F(0, "setObject:forKey:", void,
-           setObject_forKey_,
-           NSObject*, NSString*);
-#define    setObject_forKey_(...) \
-    _MAC_P(setObject_forKey_, ##__VA_ARGS__)
-
-_MAC_F(0, "setBool:forKey:", void,
-           setBool_forKey_,
-           bool, NSString*);
-#define    setBool_forKey_(...) \
-    _MAC_P(setBool_forKey_, ##__VA_ARGS__)
-
-_MAC_F(0, "localizedStringForKey:value:table:", NSString*,
-           localizedStringForKey_value_table_,
-           NSString*, NSString*, NSString*);
-#define    localizedStringForKey_value_table_(...) \
-    _MAC_P(localizedStringForKey_value_table_, ##__VA_ARGS__)
-
-_MAC_F(0, "bundleWithIdentifier:", NSBundle*,
-           bundleWithIdentifier_,
-           NSString*);
-#define    bundleWithIdentifier_(...) \
-    _MAC_P(bundleWithIdentifier_, ##__VA_ARGS__)
-
-_MAC_F(0, "mainBundle", NSBundle*,
-           mainBundle);
-#define    mainBundle(...) \
-    _MAC_P(mainBundle, ##__VA_ARGS__)
-
-_MAC_F(0, "bundlePath", NSString*,
-           bundlePath);
-#define    bundlePath(...) \
-    _MAC_P(bundlePath, ##__VA_ARGS__)
-
-_MAC_F(0, "URLsForDirectory:inDomains:", NSArray*,
-           URLsForDirectory_inDomains_,
-           NSInteger, NSInteger);
-#define    URLsForDirectory_inDomains_(...) \
-    _MAC_P(URLsForDirectory_inDomains_, ##__VA_ARGS__)
-
-_MAC_F(0, "URLs", NSArray*,
-           URLs);
-#define    URLs(...) \
-    _MAC_P(URLs, ##__VA_ARGS__)
-
-_MAC_F(0, "separatorItem", NSMenuItem*,
-           separatorItem);
-#define    separatorItem(...) \
-    _MAC_P(separatorItem, ##__VA_ARGS__)
-
-_MAC_F(0, "addItem:", void,
-           addItem_,
-           NSMenuItem*);
-#define    addItem_(...) \
-    _MAC_P(addItem_, ##__VA_ARGS__)
-
-_MAC_F(0, "setAutoenablesItems:", void,
-           setAutoenablesItems_,
-           bool);
-#define    setAutoenablesItems_(...) \
-    _MAC_P(setAutoenablesItems_, ##__VA_ARGS__)
-
-_MAC_F(0, "imageNamed:", NSImage*,
-           imageNamed_,
-           NSString*);
-#define    imageNamed_(...) \
-    _MAC_P(imageNamed_, ##__VA_ARGS__)
-
-_MAC_F(0, "setImage:", void,
-           setImage_,
-           NSImage*);
-#define    setImage_(...) \
-    _MAC_P(setImage_, ##__VA_ARGS__)
-
-_MAC_F(0, "setOnStateImage:", void,
-           setOnStateImage_,
-           NSImage*);
-#define    setOnStateImage_(...) \
-    _MAC_P(setOnStateImage_, ##__VA_ARGS__)
-
-_MAC_F(0, "setSubmenu:", void,
-           setSubmenu_,
-           NSMenu*);
-#define    setSubmenu_(...) \
-    _MAC_P(setSubmenu_, ##__VA_ARGS__)
-
-_MAC_F(0, "popUpMenuPositioningItem:atLocation:inView:", bool,
-           popUpMenuPositioningItem_atLocation_inView_,
-           NSMenuItem*, NSPoint, NSView*);
-#define    popUpMenuPositioningItem_atLocation_inView_(...) \
-    _MAC_P(popUpMenuPositioningItem_atLocation_inView_, ##__VA_ARGS__)
-
-_MAC_F(0, "lockFocus", void,
-           lockFocus);
-#define    lockFocus(...) \
-    _MAC_P(lockFocus, ##__VA_ARGS__)
-
-_MAC_F(0, "unlockFocus", void,
-           unlockFocus);
-#define    unlockFocus(...) \
-    _MAC_P(unlockFocus, ##__VA_ARGS__)
-
-_MAC_F(0, "CGImageForProposedRect:context:hints:", CGImageRef,
-           CGImageForProposedRect_context_hints_,
-           NSRect*, NSGraphicsContext*, NSDictionary*);
-#define    CGImageForProposedRect_context_hints_(...) \
-    _MAC_P(CGImageForProposedRect_context_hints_, ##__VA_ARGS__)
-
-_MAC_F(0, "initWithSize:", NSImage*,
-           initWithSize_,
-           NSSize);
-#define    initWithSize_(...) \
-    _MAC_P(initWithSize_, ##__VA_ARGS__)
-
-_MAC_F(0, "initWithCGImage:size:", NSImage*,
-           initWithCGImage_size_,
-           CGImageRef, NSSize);
-#define    initWithCGImage_size_(...) \
-    _MAC_P(initWithCGImage_size_, ##__VA_ARGS__)
-
-_MAC_F(0, "initWithContentRect:styleMask:backing:defer:", NSWindow*,
-           initWithContentRect_styleMask_backing_defer_,
-           NSRect, NSInteger, NSInteger, bool);
-#define    initWithContentRect_styleMask_backing_defer_(...) \
-    _MAC_P(initWithContentRect_styleMask_backing_defer_, ##__VA_ARGS__)
-
-_MAC_F(0, "initWithTitle:action:keyEquivalent:", NSMenuItem*,
-           initWithTitle_action_keyEquivalent_,
-           NSString*, SEL, NSString*);
-#define    initWithTitle_action_keyEquivalent_(...) \
-    _MAC_P(initWithTitle_action_keyEquivalent_, ##__VA_ARGS__)
-
-_MAC_F(4, "contentRectForFrameRect:", NSRect,
-           contentRectForFrameRect_,
-           NSRect);
-#define    contentRectForFrameRect_(...) \
-    _MAC_P(contentRectForFrameRect_, ##__VA_ARGS__)
-
-_MAC_F(4, "frameRectForContentRect:", NSRect,
-           frameRectForContentRect_,
-           NSRect);
-#define    frameRectForContentRect_(...) \
-    _MAC_P(frameRectForContentRect_, ##__VA_ARGS__)
-
-_MAC_F(4, "visibleFrame", NSRect,
-           visibleFrame);
-#define    visibleFrame(...) \
-    _MAC_P(visibleFrame, ##__VA_ARGS__)
-
-_MAC_F(4, "frame", NSRect,
-           frame);
-#define    frame(...) \
-    _MAC_P(frame, ##__VA_ARGS__)
-
-_MAC_F(0, "setFrame:", void,
-           setFrame_,
-           NSRect);
-#define    setFrame_(...) \
-    _MAC_P(setFrame_, ##__VA_ARGS__)
-
-_MAC_F(0, "setFrame:display:animate:", void,
-           setFrame_display_animate_,
-           NSRect, bool, bool);
-#define    setFrame_display_animate_(...) \
-    _MAC_P(setFrame_display_animate_, ##__VA_ARGS__)
-
-_MAC_F(0, "characters", NSString*,
-           characters);
-#define    characters(...) \
-    _MAC_P(characters, ##__VA_ARGS__)
-
-_MAC_F(0, "charactersIgnoringModifiers", NSString*,
-           charactersIgnoringModifiers);
-#define    charactersIgnoringModifiers(...) \
-    _MAC_P(charactersIgnoringModifiers, ##__VA_ARGS__)
-
-_MAC_F(0, "acceptsFirstResponder", bool,
-           acceptsFirstResponder);
-#define    acceptsFirstResponder(...) \
-    _MAC_P(acceptsFirstResponder, ##__VA_ARGS__)
-
-_MAC_F(0, "setInitialFirstResponder:", void,
-           setInitialFirstResponder_,
-           NSView*);
-#define    setInitialFirstResponder_(...) \
-    _MAC_P(setInitialFirstResponder_, ##__VA_ARGS__)
-
-_MAC_F(0, "setMinSize:", void,
-           setMinSize_,
-           NSSize);
-#define    setMinSize_(...) \
-    _MAC_P(setMinSize_, ##__VA_ARGS__)
-
-_MAC_F(0, "setTitle:", void,
-           setTitle_,
-           NSString*);
-#define    setTitle_(...) \
-    _MAC_P(setTitle_, ##__VA_ARGS__)
-
-_MAC_F(0, "setStringValue:", void,
-           setStringValue_,
-           NSString*);
-#define    setStringValue_(...) \
-    _MAC_P(setStringValue_, ##__VA_ARGS__)
-
-_MAC_F(0, "windowShouldClose:", bool,
-           windowShouldClose_,
-           void*);
-#define    windowShouldClose_(...) \
-    _MAC_P(windowShouldClose_, ##__VA_ARGS__)
-
-_MAC_F(0, "windowDidResize:", void,
-           windowDidResize_,
-           void*);
-#define    windowDidResize_(...) \
-    _MAC_P(windowDidResize_, ##__VA_ARGS__)
-
-_MAC_F(0, "isKeyWindow", bool,
-           isKeyWindow);
-#define    isKeyWindow(...) \
-    _MAC_P(isKeyWindow, ##__VA_ARGS__)
-
-_MAC_F(0, "makeKeyWindow", void,
-           makeKeyWindow);
-#define    makeKeyWindow(...) \
-    _MAC_P(makeKeyWindow, ##__VA_ARGS__)
-
-_MAC_F(0, "orderFront:", void,
-           orderFront_,
-           void*);
-#define    orderFront_(...) \
-    _MAC_P(orderFront_, ##__VA_ARGS__)
-
-_MAC_F(0, "orderOut:", void,
-           orderOut_,
-           void*);
-#define    orderOut_(...) \
-    _MAC_P(orderOut_, ##__VA_ARGS__)
-
-_MAC_F(0, "setNeedsDisplay:", void,
-           setNeedsDisplay_,
-           bool);
-#define    setNeedsDisplay_(...) \
-    _MAC_P(setNeedsDisplay_, ##__VA_ARGS__)
-
-_MAC_F(0, "setDelegate:", void,
-           setDelegate_,
-           void*);
-#define    setDelegate_(...) \
-    _MAC_P(setDelegate_, ##__VA_ARGS__)
-
-_MAC_F(0, "setEnabled:", void,
-           setEnabled_,
-           bool);
-#define    setEnabled_(...) \
-    _MAC_P(setEnabled_, ##__VA_ARGS__)
-
-_MAC_F(0, "setNextKeyView:", void,
-           setNextKeyView_,
-           NSView*);
-#define    setNextKeyView_(...) \
-    _MAC_P(setNextKeyView_, ##__VA_ARGS__)
-
-_MAC_F(0, "setDefaultButtonCell:", void,
-           setDefaultButtonCell_,
-           NSButtonCell*);
-#define    setDefaultButtonCell_(...) \
-    _MAC_P(setDefaultButtonCell_, ##__VA_ARGS__)
-
-_MAC_F(0, "setPostsBoundsChangedNotifications:", void,
-           setPostsBoundsChangedNotifications_,
-           bool);
-#define    setPostsBoundsChangedNotifications_(...) \
-    _MAC_P(setPostsBoundsChangedNotifications_, ##__VA_ARGS__)
-
-_MAC_F(0, "setPostsFrameChangedNotifications:", void,
-           setPostsFrameChangedNotifications_,
-           bool);
-#define    setPostsFrameChangedNotifications_(...) \
-    _MAC_P(setPostsFrameChangedNotifications_, ##__VA_ARGS__)
-
-_MAC_F(0, "addObserver:selector:name:object:", void,
-           addObserver_selector_name_object_,
-           id, SEL, NSString*, id);
-#define    addObserver_selector_name_object_(...) \
-    _MAC_P(addObserver_selector_name_object_, ##__VA_ARGS__)
-
-_MAC_F(0, "removeObserver:name:object:", void,
-           removeObserver_name_object_,
-           id, NSString*, id);
-#define    removeObserver_name_object_(...) \
-    _MAC_P(removeObserver_name_object_, ##__VA_ARGS__)
-
-_MAC_F(0, "scrollToPoint:", void,
-           scrollToPoint_,
-           NSPoint);
-#define    scrollToPoint_(...) \
-    _MAC_P(scrollToPoint_, ##__VA_ARGS__)
-
-_MAC_F(0, "defaultCenter", NSNotificationCenter*,
-           defaultCenter);
-#define    defaultCenter(...) \
-    _MAC_P(defaultCenter, ##__VA_ARGS__)
-
-_MAC_F(4, "documentVisibleRect", NSRect,
-           documentVisibleRect);
-#define    documentVisibleRect(...) \
-    _MAC_P(documentVisibleRect, ##__VA_ARGS__)
-
-_MAC_F(0, "contentView", NSClipView*,
-           contentView);
-#define    contentView(...) \
-    _MAC_P(contentView, ##__VA_ARGS__)
-
-_MAC_F(0, "verticalScroller", NSView*,
-           verticalScroller);
-#define    verticalScroller(...) \
-    _MAC_P(verticalScroller, ##__VA_ARGS__)
-
-_MAC_F(0, "setHasVerticalScroller:", void,
-           setHasVerticalScroller_,
-           bool);
-#define    setHasVerticalScroller_(...) \
-    _MAC_P(setHasVerticalScroller_, ##__VA_ARGS__)
-
-_MAC_F(0, "isEnabled", bool,
-           isEnabled);
-#define    isEnabled(...) \
-    _MAC_P(isEnabled, ##__VA_ARGS__)
-
-_MAC_F(0, "state", NSInteger,
-           state);
-#define    state(...) \
-    _MAC_P(state, ##__VA_ARGS__)
-
-_MAC_F(0, "setState:", void,
-           setState_,
-           NSInteger);
-#define    setState_(...) \
-    _MAC_P(setState_, ##__VA_ARGS__)
-
-_MAC_F(0, "setToolTip:", void,
-           setToolTip_,
-           NSString*);
-#define    setToolTip_(...) \
-    _MAC_P(setToolTip_, ##__VA_ARGS__)
-
-_MAC_F(0, "setButtonType:", void,
-           setButtonType_,
-           NSInteger);
-#define    setButtonType_(...) \
-    _MAC_P(setButtonType_, ##__VA_ARGS__)
-
-_MAC_F(0, "setBezelStyle:", void,
-           setBezelStyle_,
-           NSInteger);
-#define    setBezelStyle_(...) \
-    _MAC_P(setBezelStyle_, ##__VA_ARGS__)
-
-_MAC_F(0, "setImagePosition:", void,
-           setImagePosition_,
-           NSInteger);
-#define    setImagePosition_(...) \
-    _MAC_P(setImagePosition_, ##__VA_ARGS__)
-
-_MAC_F(0, "setSendsActionOnEndEditing:", void,
-           setSendsActionOnEndEditing_,
-           bool);
-#define    setSendsActionOnEndEditing_(...) \
-    _MAC_P(setSendsActionOnEndEditing_, ##__VA_ARGS__)
-
-_MAC_F(0, "control:textView:doCommandBySelector:", bool,
-           control_textView_doCommandBySelector_,
-           void*, NSView*, SEL);
-#define    control_textView_doCommandBySelector_(...) \
-    _MAC_P(control_textView_doCommandBySelector_, ##__VA_ARGS__)
-
-_MAC_F(0, "moveDown:", void,
-           moveDown_,
-           void*);
-#define    moveDown_(...) \
-    _MAC_P(moveDown_, ##__VA_ARGS__)
-
-_MAC_F(0, "moveUp:", void,
-           moveUp_,
-           void*);
-#define    moveUp_(...) \
-    _MAC_P(moveUp_, ##__VA_ARGS__)
-
-_MAC_F(0, "setEditable:", void,
-           setEditable_,
-           bool);
-#define    setEditable_(...) \
-    _MAC_P(setEditable_, ##__VA_ARGS__)
-
-_MAC_F(0, "setSelectable:", void,
-           setSelectable_,
-           bool);
-#define    setSelectable_(...) \
-    _MAC_P(setSelectable_, ##__VA_ARGS__)
-
-_MAC_F(0, "setBezeled:", void,
-           setBezeled_,
-           bool);
-#define    setBezeled_(...) \
-    _MAC_P(setBezeled_, ##__VA_ARGS__)
-
-_MAC_F(0, "setBordered:", void,
-           setBordered_,
-           bool);
-#define    setBordered_(...) \
-    _MAC_P(setBordered_, ##__VA_ARGS__)
-
-_MAC_F(0, "setDrawsBackground:", void,
-           setDrawsBackground_,
-           bool);
-#define    setDrawsBackground_(...) \
-    _MAC_P(setDrawsBackground_, ##__VA_ARGS__)
-
-_MAC_F(0, "setScrollable:", void,
-           setScrollable_,
-           bool);
-#define    setScrollable_(...) \
-    _MAC_P(setScrollable_, ##__VA_ARGS__)
-
-_MAC_F(0, "statusItemWithLength:", NSStatusItem*,
-           statusItemWithLength_,
-           CGFloat);
-#define    statusItemWithLength_(...) \
-    _MAC_P(statusItemWithLength_, ##__VA_ARGS__)
-
-_MAC_F(0, "removeStatusItem:", void,
-           removeStatusItem_,
-           NSStatusItem*);
-#define    removeStatusItem_(...) \
-    _MAC_P(removeStatusItem_, ##__VA_ARGS__)
-
-_MAC_F(0, "systemStatusBar", NSStatusBar*,
-           systemStatusBar);
-#define    systemStatusBar(...) \
-    _MAC_P(systemStatusBar, ##__VA_ARGS__)
-
-_MAC_F(0, "mainScreen", NSScreen*,
-           mainScreen);
-#define    mainScreen(...) \
-    _MAC_P(mainScreen, ##__VA_ARGS__)
-
-_MAC_F(1, "thickness", CGFloat,
-           thickness);
-#define    thickness(...) \
-    _MAC_P(thickness, ##__VA_ARGS__)
-
-_MAC_F(2, "cellSize", NSSize,
-           cellSize);
-#define    cellSize(...) \
-    _MAC_P(cellSize, ##__VA_ARGS__)
-
-_MAC_F(0, "tag", NSInteger,
-           tag);
-#define    tag(...) \
-    _MAC_P(tag, ##__VA_ARGS__)
-
-_MAC_F(0, "setTag:", void,
-           setTag_,
-           NSInteger);
-#define    setTag_(...) \
-    _MAC_P(setTag_, ##__VA_ARGS__)
-
-_MAC_F(0, "setHighlightMode:", void,
-           setHighlightMode_,
-           NSInteger);
-#define    setHighlightMode_(...) \
-    _MAC_P(setHighlightMode_, ##__VA_ARGS__)
-
-_MAC_F(0, "setHidden:", void,
-           setHidden_,
-           bool);
-#define    setHidden_(...) \
-    _MAC_P(setHidden_, ##__VA_ARGS__)
-
-_MAC_F(0, "setContentView:", void,
-           setContentView_,
-           NSView*);
-#define    setContentView_(...) \
-    _MAC_P(setContentView_, ##__VA_ARGS__)
-
-_MAC_F(0, "setDocumentView:", void,
-           setDocumentView_,
-           NSView*);
-#define    setDocumentView_(...) \
-    _MAC_P(setDocumentView_, ##__VA_ARGS__)
-
-_MAC_F(0, "addSubview:", void,
-           addSubview_,
-           NSView*);
-#define    addSubview_(...) \
-    _MAC_P(addSubview_, ##__VA_ARGS__)
-
-_MAC_F(0, "isFlipped", bool,
-           isFlipped);
-#define    isFlipped(...) \
-    _MAC_P(isFlipped, ##__VA_ARGS__)
-
-_MAC_F(0, "drawRect:", void,
-           drawRect_,
-           NSRect);
-#define    drawRect_(...) \
-    _MAC_P(drawRect_, ##__VA_ARGS__)
-
-_MAC_F(0, "type", NSUInteger,
-           type);
-#define    type(...) \
-    _MAC_P(type, ##__VA_ARGS__)
-
-_MAC_F(0, "keyUp:", void,
-           keyUp_,
-           NSEvent*);
-#define    keyUp_(...) \
-    _MAC_P(keyUp_, ##__VA_ARGS__)
-
-_MAC_F(0, "keyDown:", void,
-           keyDown_,
-           NSEvent*);
-#define    keyDown_(...) \
-    _MAC_P(keyDown_, ##__VA_ARGS__)
-
-_MAC_F(0, "keyCode", unsigned short,
-           keyCode);
-#define    keyCode(...) \
-    _MAC_P(keyCode, ##__VA_ARGS__)
-
-_MAC_F(2, "mouseLocation", NSPoint,
-           mouseLocation);
-#define    mouseLocation(...) \
-    _MAC_P(mouseLocation, ##__VA_ARGS__)
-
-_MAC_F(0, "pressedMouseButtons", NSInteger,
-           pressedMouseButtons);
-#define    pressedMouseButtons(...) \
-    _MAC_P(pressedMouseButtons, ##__VA_ARGS__)
-
-_MAC_F(0, "setIgnoresMouseEvents:", void,
-           setIgnoresMouseEvents_,
-           bool);
-#define    setIgnoresMouseEvents_(...) \
-    _MAC_P(setIgnoresMouseEvents_, ##__VA_ARGS__)
-
-_MAC_F(0, "graphicsPort", CGContextRef,
-           graphicsPort);
-#define    graphicsPort(...) \
-    _MAC_P(graphicsPort, ##__VA_ARGS__)
-
-_MAC_F(0, "currentContext", NSGraphicsContext*,
-           currentContext);
-#define    currentContext(...) \
-    _MAC_P(currentContext, ##__VA_ARGS__)
-
-_MAC_F(0, "defaultManager", NSFileManager*,
-           defaultManager);
-#define    defaultManager(...) \
-    _MAC_P(defaultManager, ##__VA_ARGS__)
-
-_MAC_F(0, "systemFontOfSize:", NSFont*,
-           systemFontOfSize_,
-           CGFloat);
-#define    systemFontOfSize_(...) \
-    _MAC_P(systemFontOfSize_, ##__VA_ARGS__)
-
-_MAC_F(1, "systemFontSize", CGFloat,
-           systemFontSize);
-#define    systemFontSize(...) \
-    _MAC_P(systemFontSize, ##__VA_ARGS__)
-
-_MAC_F(2, "maximumAdvancement", NSSize,
-           maximumAdvancement);
-#define    maximumAdvancement(...) \
-    _MAC_P(maximumAdvancement, ##__VA_ARGS__)
-
-_MAC_F(0, "setIndeterminate:", void,
-           setIndeterminate_,
-           bool);
-#define    setIndeterminate_(...) \
-    _MAC_P(setIndeterminate_, ##__VA_ARGS__)
-
-_MAC_F(0, "setAlignment:", void,
-           setAlignment_,
-           NSInteger);
-#define    setAlignment_(...) \
-    _MAC_P(setAlignment_, ##__VA_ARGS__)
-
-_MAC_F(0, "addTableColumn:", void,
-           addTableColumn_,
-           NSTableColumn*);
-#define    addTableColumn_(...) \
-    _MAC_P(addTableColumn_, ##__VA_ARGS__)
-
-_MAC_F(0, "headerCell", NSCell*,
-           headerCell);
-#define    headerCell(...) \
-    _MAC_P(headerCell, ##__VA_ARGS__)
-
-_MAC_F(0, "setWantsLayer:", void,
-           setWantsLayer_,
-           bool);
-#define    setWantsLayer_(...) \
-    _MAC_P(setWantsLayer_, ##__VA_ARGS__)
-
-_MAC_F(0, "scaleUnitSquareToSize:", void,
-           scaleUnitSquareToSize_,
-           NSSize);
-#define    scaleUnitSquareToSize_(...) \
-    _MAC_P(scaleUnitSquareToSize_, ##__VA_ARGS__)
-
-_MAC_F(0, "addAttribute:value:range:", void,
-           addAttribute_value_range_,
-           NSString*, id, NSRange);
-#define    addAttribute_value_range_(...) \
-    _MAC_P(addAttribute_value_range_, ##__VA_ARGS__)
-
-_MAC_F(0, "initWithString:", NSTextStorage*,
-           initWithString_,
-           NSString*);
-#define    initWithString_(...) \
-    _MAC_P(initWithString_, ##__VA_ARGS__)
-
-_MAC_F(0, "initWithContainerSize:", NSTextContainer*,
-           initWithContainerSize_,
-           NSSize);
-#define    initWithContainerSize_(...) \
-    _MAC_P(initWithContainerSize_, ##__VA_ARGS__)
-
-_MAC_F(0, "addTextContainer:", void,
-           addTextContainer_,
-           NSTextContainer*);
-#define    addTextContainer_(...) \
-    _MAC_P(addTextContainer_, ##__VA_ARGS__)
-
-_MAC_F(0, "addLayoutManager:", void,
-           addLayoutManager_,
-           NSLayoutManager*);
-#define    addLayoutManager_(...) \
-    _MAC_P(addLayoutManager_, ##__VA_ARGS__)
-
-_MAC_F(0, "setLineFragmentPadding:", void,
-           setLineFragmentPadding_,
-           CGFloat);
-#define    setLineFragmentPadding_(...) \
-    _MAC_P(setLineFragmentPadding_, ##__VA_ARGS__)
-
-_MAC_F(0, "glyphRangeForTextContainer:", void,
-           glyphRangeForTextContainer_,
-           NSTextContainer*);
-#define    glyphRangeForTextContainer_(...) \
-    _MAC_P(glyphRangeForTextContainer_, ##__VA_ARGS__)
-
-_MAC_F(4, "usedRectForTextContainer:", NSRect,
-           usedRectForTextContainer_,
-           NSTextContainer*);
-#define    usedRectForTextContainer_(...) \
-    _MAC_P(usedRectForTextContainer_, ##__VA_ARGS__)
-
-_MAC_F(0, "drawInRect:withAttributes:", void,
-           drawInRect_withAttributes_,
-           NSRect, NSDictionary*);
-#define    drawInRect_withAttributes_(...) \
-    _MAC_P(drawInRect_withAttributes_, ##__VA_ARGS__)
-
-_MAC_F(2, "sizeWithAttributes:", NSSize,
-           sizeWithAttributes_,
-           NSDictionary*);
-#define    sizeWithAttributes_(...) \
-    _MAC_P(sizeWithAttributes_, ##__VA_ARGS__)
-
-_MAC_F(0, "textDidChange:", void,
-           textDidChange_,
-           void*);
-#define    textDidChange_(...) \
-    _MAC_P(textDidChange_, ##__VA_ARGS__)
-
-_MAC_F(0, "stringValue", NSString*,
-           stringValue);
-#define    stringValue(...) \
-    _MAC_P(stringValue, ##__VA_ARGS__)
-
-_MAC_F(1, "doubleValue", double,
-           doubleValue);
-#define    doubleValue(...) \
-    _MAC_P(doubleValue, ##__VA_ARGS__)
-
-_MAC_F(0, "setDoubleValue:", void,
-           setDoubleValue_,
-           double);
-#define    setDoubleValue_(...) \
-    _MAC_P(setDoubleValue_, ##__VA_ARGS__)
-
-_MAC_F(0, "setIntegerValue:", void,
-           setIntegerValue_,
-           NSInteger);
-#define    setIntegerValue_(...) \
-    _MAC_P(setIntegerValue_, ##__VA_ARGS__)
-
-_MAC_F(0, "displayIfNeeded", void,
-           displayIfNeeded);
-#define    displayIfNeeded(...) \
-    _MAC_P(displayIfNeeded, ##__VA_ARGS__)
-
-_MAC_F(0, "display", void,
-           display);
-#define    display(...) \
-    _MAC_P(display, ##__VA_ARGS__)
-
-_MAC_F(0, "setMinValue:", void,
-           setMinValue_,
-           double);
-#define    setMinValue_(...) \
-    _MAC_P(setMinValue_, ##__VA_ARGS__)
-
-_MAC_F(0, "setMaxValue:", void,
-           setMaxValue_,
-           double);
-#define    setMaxValue_(...) \
-    _MAC_P(setMaxValue_, ##__VA_ARGS__)
-
-_MAC_F(0, "setValueWraps:", void,
-           setValueWraps_,
-           bool);
-#define    setValueWraps_(...) \
-    _MAC_P(setValueWraps_, ##__VA_ARGS__)
-
-_MAC_F(0, "setFormatter:", void,
-           setFormatter_,
-           NSNumberFormatter*);
-#define    setFormatter_(...) \
-    _MAC_P(setFormatter_, ##__VA_ARGS__)
-
-_MAC_F(0, "setFormatterBehavior:", void,
-           setFormatterBehavior_,
-           NSInteger);
-#define    setFormatterBehavior_(...) \
-    _MAC_P(setFormatterBehavior_, ##__VA_ARGS__)
-
-_MAC_F(0, "setNumberStyle:", void,
-           setNumberStyle_,
-           NSInteger);
-#define    setNumberStyle_(...) \
-    _MAC_P(setNumberStyle_, ##__VA_ARGS__)
-
-_MAC_F(0, "setPartialStringValidationEnabled:", void,
-           setPartialStringValidationEnabled_,
-           bool);
-#define    setPartialStringValidationEnabled_(...) \
-    _MAC_P(setPartialStringValidationEnabled_, ##__VA_ARGS__)
-
-_MAC_F(0, "isPartialStringValid:newEditingString:errorDescription:", bool,
-           isPartialStringValid_newEditingString_errorDescription_,
-           NSString*, NSString*, NSString*);
-#define    isPartialStringValid_newEditingString_errorDescription_(...) \
-    _MAC_P(isPartialStringValid_newEditingString_errorDescription_, ##__VA_ARGS__)
-
-_MAC_F(0, "getObjectValue:forString:errorDescription:", bool,
-           getObjectValue_forString_errorDescription_,
-           void**, NSString*, NSString*);
-#define    getObjectValue_forString_errorDescription_(...) \
-    _MAC_P(getObjectValue_forString_errorDescription_, ##__VA_ARGS__)
-
-_MAC_F(0, "reloadData", void,
-           reloadData);
-#define    reloadData(...) \
-    _MAC_P(reloadData, ##__VA_ARGS__)
-
-_MAC_F(0, "dataCell", void*,
-           dataCell);
-#define    dataCell(...) \
-    _MAC_P(dataCell, ##__VA_ARGS__)
-
-_MAC_F(0, "setDataCell:", void,
-           setDataCell_,
-           NSCell*);
-#define    setDataCell_(...) \
-    _MAC_P(setDataCell_, ##__VA_ARGS__)
-
-_MAC_F(0, "setDataSource:", void,
-           setDataSource_,
-           void*);
-#define    setDataSource_(...) \
-    _MAC_P(setDataSource_, ##__VA_ARGS__)
-
-_MAC_F(0, "setResizingMask:", void,
-           setResizingMask_,
-           NSInteger);
-#define    setResizingMask_(...) \
-    _MAC_P(setResizingMask_, ##__VA_ARGS__)
-
-_MAC_F(0, "numberOfRowsInTableView:", NSInteger,
-           numberOfRowsInTableView_,
-           NSTableView*);
-#define    numberOfRowsInTableView_(...) \
-    _MAC_P(numberOfRowsInTableView_, ##__VA_ARGS__)
-
-_MAC_F(0, "tableView:objectValueForTableColumn:row:", void*,
-           tableView_objectValueForTableColumn_row_,
-           NSTableView*, NSTableColumn*, NSInteger);
-#define    tableView_objectValueForTableColumn_row_(...) \
-    _MAC_P(tableView_objectValueForTableColumn_row_, ##__VA_ARGS__)
-
-_MAC_F(0, "tableView:setObjectValue:forTableColumn:row:", void,
-           tableView_setObjectValue_forTableColumn_row_,
-           NSTableView*, void*, NSTableColumn*, NSInteger);
-#define    tableView_setObjectValue_forTableColumn_row_(...) \
-    _MAC_P(tableView_setObjectValue_forTableColumn_row_, ##__VA_ARGS__)
-
-_MAC_F(0, "tableView:dataCellForTableColumn:row:", NSCell*,
-           tableView_dataCellForTableColumn_row_,
-           NSTableView*, NSTableColumn*, NSInteger);
-#define    tableView_dataCellForTableColumn_row_(...) \
-    _MAC_P(tableView_dataCellForTableColumn_row_, ##__VA_ARGS__)
-
-_MAC_F(0, "tableView:viewForTableColumn:row:", NSView*,
-           tableView_viewForTableColumn_row_,
-           NSTableView*, NSTableColumn*, NSInteger);
-#define    tableView_viewForTableColumn_row_(...) \
-    _MAC_P(tableView_viewForTableColumn_row_, ##__VA_ARGS__)
-
-_MAC_F(0, "push", void,
-           push);
-#define    push(...) \
-    _MAC_P(push, ##__VA_ARGS__)
-
-_MAC_F(0, "pop", void,
-           pop);
-#define    pop(...) \
-    _MAC_P(pop, ##__VA_ARGS__)
-
-_MAC_F(0, "pointingHandCursor", NSCursor*,
-           pointingHandCursor);
-#define    pointingHandCursor(...) \
-    _MAC_P(pointingHandCursor, ##__VA_ARGS__)
-
-_MAC_F(0, "flushBuffer", void,
-           flushBuffer);
-#define    flushBuffer(...) \
-    _MAC_P(flushBuffer, ##__VA_ARGS__)
-
-_MAC_F(0, "openGLContext", NSOpenGLContext*,
-           openGLContext);
-#define    openGLContext(...) \
-    _MAC_P(openGLContext, ##__VA_ARGS__)
-
-_MAC_F(0, "isOpaque", bool,
-           isOpaque);
-#define    isOpaque(...) \
-    _MAC_P(isOpaque, ##__VA_ARGS__)
-
-_MAC_F(0, "setOpaque:", void,
-           setOpaque_,
-           bool);
-#define    setOpaque_(...) \
-    _MAC_P(setOpaque_, ##__VA_ARGS__)
-
-_MAC_F(0, "initWithAttributes:", NSOpenGLPixelFormat*,
-           initWithAttributes_,
-           int*);
-#define    initWithAttributes_(...) \
-    _MAC_P(initWithAttributes_, ##__VA_ARGS__)
-
-_MAC_F(0, "initWithFrame:pixelFormat:", NSOpenGLView*,
-           initWithFrame_pixelFormat_,
-           NSRect, NSOpenGLPixelFormat*);
-#define    initWithFrame_pixelFormat_(...) \
-    _MAC_P(initWithFrame_pixelFormat_, ##__VA_ARGS__)
-
-_MAC_F(0, "makeCurrentContext", void,
-           makeCurrentContext);
-#define    makeCurrentContext(...) \
-    _MAC_P(makeCurrentContext, ##__VA_ARGS__)
-
-_MAC_F(0, "setValues:forParameter:", void,
-           setValues_forParameter_,
-           int*, NSInteger);
-#define    setValues_forParameter_(...) \
-    _MAC_P(setValues_forParameter_, ##__VA_ARGS__)
-
-_MAC_F(0, "setLevel:", void,
-           setLevel_,
-           NSInteger);
-#define    setLevel_(...) \
-    _MAC_P(setLevel_, ##__VA_ARGS__)
-
-_MAC_F(0, "setHasShadow:", void,
-           setHasShadow_,
-           bool);
-#define    setHasShadow_(...) \
-    _MAC_P(setHasShadow_, ##__VA_ARGS__)
-
-_MAC_F(0, "colorWithDeviceRed:green:blue:alpha:", NSColor*,
-           colorWithDeviceRed_green_blue_alpha_,
-           CGFloat, CGFloat, CGFloat, CGFloat);
-#define    colorWithDeviceRed_green_blue_alpha_(...) \
-    _MAC_P(colorWithDeviceRed_green_blue_alpha_, ##__VA_ARGS__)
-
-_MAC_F(0, "colorWithCGColor:", NSColor*,
-           colorWithCGColor_,
-           CGColorRef);
-#define    colorWithCGColor_(...) \
-    _MAC_P(colorWithCGColor_, ##__VA_ARGS__)
-
-_MAC_F(0, "controlTextColor", NSColor*,
-           controlTextColor);
-#define    controlTextColor(...) \
-    _MAC_P(controlTextColor, ##__VA_ARGS__)
-
-_MAC_F(0, "disabledControlTextColor", NSColor*,
-           disabledControlTextColor);
-#define    disabledControlTextColor(...) \
-    _MAC_P(disabledControlTextColor, ##__VA_ARGS__)
-
-_MAC_F(0, "placeholderTextColor", NSColor*,
-           placeholderTextColor);
-#define    placeholderTextColor(...) \
-    _MAC_P(placeholderTextColor, ##__VA_ARGS__)
-
-_MAC_F(0, "textColor", NSColor*,
-           textColor);
-#define    textColor(...) \
-    _MAC_P(textColor, ##__VA_ARGS__)
-
-_MAC_F(0, "clearColor", NSColor*,
-           clearColor);
-#define    clearColor(...) \
-    _MAC_P(clearColor, ##__VA_ARGS__)
-
-_MAC_F(0, "setTextColor:", void,
-           setTextColor_,
-           NSColor*);
-#define    setTextColor_(...) \
-    _MAC_P(setTextColor_, ##__VA_ARGS__)
-
-_MAC_F(0, "setBackgroundColor:", void,
-           setBackgroundColor_,
-           NSColor*);
-#define    setBackgroundColor_(...) \
-    _MAC_P(setBackgroundColor_, ##__VA_ARGS__)
-
-_MAC_F(0, "postEvent:atStart:", void,
-           postEvent_atStart_,
-           NSEvent*, bool);
-#define    postEvent_atStart_(...) \
-    _MAC_P(postEvent_atStart_, ##__VA_ARGS__)
-
-_MAC_F(0, "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:", NSEvent*,
-           otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_,
-           NSInteger, NSPoint, NSInteger, NSTimeInterval, NSInteger, NSGraphicsContext*, short, NSInteger, NSInteger);
-#define    otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(...) \
-    _MAC_P(otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_, ##__VA_ARGS__)
-
-_MAC_F(0, "performSelector:target:argument:order:modes:", void,
-           performSelector_target_argument_order_modes_,
-           SEL, id, id, NSUInteger, NSArray*);
-#define    performSelector_target_argument_order_modes_(...) \
-    _MAC_P(performSelector_target_argument_order_modes_, ##__VA_ARGS__)
-
-_MAC_F(0, "currentRunLoop", NSRunLoop*,
-           currentRunLoop);
-#define    currentRunLoop(...) \
-    _MAC_P(currentRunLoop, ##__VA_ARGS__)
-
-_MAC_F(0, "addButtonWithTitle:", NSButton*,
-           addButtonWithTitle_,
-           NSString*);
-#define    addButtonWithTitle_(...) \
-    _MAC_P(addButtonWithTitle_, ##__VA_ARGS__)
-
-_MAC_F(0, "setMessageText:", void,
-           setMessageText_,
-           NSString*);
-#define    setMessageText_(...) \
-    _MAC_P(setMessageText_, ##__VA_ARGS__)
-
-_MAC_F(0, "setInformativeText:", void,
-           setInformativeText_,
-           NSString*);
-#define    setInformativeText_(...) \
-    _MAC_P(setInformativeText_, ##__VA_ARGS__)
-
-_MAC_F(0, "setAlertStyle:", void,
-           setAlertStyle_,
-           NSInteger);
-#define    setAlertStyle_(...) \
-    _MAC_P(setAlertStyle_, ##__VA_ARGS__)
-
-_MAC_F(0, "openPanel", NSOpenPanel*,
-           openPanel);
-#define    openPanel(...) \
-    _MAC_P(openPanel, ##__VA_ARGS__)
-
-_MAC_F(0, "setAllowsMultipleSelection:", void,
-           setAllowsMultipleSelection_,
-           bool);
-#define    setAllowsMultipleSelection_(...) \
-    _MAC_P(setAllowsMultipleSelection_, ##__VA_ARGS__)
-
-_MAC_F(0, "setCanChooseDirectories:", void,
-           setCanChooseDirectories_,
-           bool);
-#define    setCanChooseDirectories_(...) \
-    _MAC_P(setCanChooseDirectories_, ##__VA_ARGS__)
-
-_MAC_F(0, "setCanChooseFiles:", void,
-           setCanChooseFiles_,
-           bool);
-#define    setCanChooseFiles_(...) \
-    _MAC_P(setCanChooseFiles_, ##__VA_ARGS__)
-
-_MAC_F(0, "setAllowedFileTypes:", void,
-           setAllowedFileTypes_,
-           NSArray*);
-#define    setAllowedFileTypes_(...) \
-    _MAC_P(setAllowedFileTypes_, ##__VA_ARGS__)
-
-_MAC_F(0, "setNameFieldStringValue:", void,
-           setNameFieldStringValue_,
-           NSString*);
-#define    setNameFieldStringValue_(...) \
-    _MAC_P(setNameFieldStringValue_, ##__VA_ARGS__)
-
-_MAC_F(0, "setDirectoryURL:", void,
-           setDirectoryURL_,
-           NSURL*);
-#define    setDirectoryURL_(...) \
-    _MAC_P(setDirectoryURL_, ##__VA_ARGS__)
-
-_MAC_F(0, "wantsBestResolutionOpenGLSurface", bool,
-           wantsBestResolutionOpenGLSurface);
-#define    wantsBestResolutionOpenGLSurface(...) \
-    _MAC_P(wantsBestResolutionOpenGLSurface, ##__VA_ARGS__)
-
-_MAC_F(2, "convertSizeToBacking:", NSSize,
-           convertSizeToBacking_,
-           NSSize);
-#define    convertSizeToBacking_(...) \
-    _MAC_P(convertSizeToBacking_, ##__VA_ARGS__)
-
-_MAC_F(2, "convertSizeFromBacking:", NSSize,
-           convertSizeFromBacking_,
-           NSSize);
-#define    convertSizeFromBacking_(...) \
-    _MAC_P(convertSizeFromBacking_, ##__VA_ARGS__)
-
-_MAC_F(2, "convertPointToBacking:", NSPoint,
-           convertPointToBacking_,
-           NSPoint);
-#define    convertPointToBacking_(...) \
-    _MAC_P(convertPointToBacking_, ##__VA_ARGS__)
-
-_MAC_F(2, "convertPointFromBacking:", NSPoint,
-           convertPointFromBacking_,
-           NSPoint);
-#define    convertPointFromBacking_(...) \
-    _MAC_P(convertPointFromBacking_, ##__VA_ARGS__)
-
-_MAC_F(4, "convertRectToBacking:", NSRect,
-           convertRectToBacking_,
-           NSRect);
-#define    convertRectToBacking_(...) \
-    _MAC_P(convertRectToBacking_, ##__VA_ARGS__)
-
-_MAC_F(4, "convertRectFromBacking:", NSRect,
-           convertRectFromBacking_,
-           NSRect);
-#define    convertRectFromBacking_(...) \
-    _MAC_P(convertRectFromBacking_, ##__VA_ARGS__)
+_MAC_T(NSObject);
+_MAC_T(NSUserDefaults);
+_MAC_T(NSRunLoop);
+_MAC_T(NSApplication);
+_MAC_T(NSAutoreleasePool);
+_MAC_T(NSNotificationCenter);
+_MAC_T(NSNotification);
+_MAC_T(NSBundle);
+_MAC_T(NSEvent);
+_MAC_T(NSMutableParagraphStyle);
+_MAC_T(NSFileManager);
+_MAC_T(NSOpenPanel);
+_MAC_T(NSAlert);
+_MAC_T(NSNumberFormatter);
+_MAC_T(NSGraphicsContext);
+_MAC_T(NSImage);
+_MAC_T(NSMenu);
+_MAC_T(NSMenuItem);
+_MAC_T(NSStatusItem);
+_MAC_T(NSStatusBar);
+_MAC_T(NSScreen);
+_MAC_T(NSWindow);
+_MAC_T(NSTextField);
+_MAC_T(NSButtonCell);
+_MAC_T(NSButton);
+_MAC_T(NSProgressIndicator);
+_MAC_T(NSStepper);
+_MAC_T(NSView);
+_MAC_T(NSCell);
+_MAC_T(NSScrollView);
+_MAC_T(NSClipView);
+_MAC_T(NSTableView);
+_MAC_T(NSTableColumn);
+_MAC_T(NSLayoutManager);
+_MAC_T(NSTextContainer);
+_MAC_T(NSTextStorage);
+_MAC_T(NSColor);
+_MAC_T(NSCursor);
+_MAC_T(NSPanel);
+_MAC_T(NSOpenGLView);
+_MAC_T(NSOpenGLContext);
+_MAC_T(NSOpenGLPixelFormat);
+
+
+
+_MAC_F0(void*, init);
+_MAC_F0(void*, alloc);
+_MAC_F0(void*, release);
+_MAC_F0(void*, retain);
+_MAC_F0(Class, class);
+_MAC_F0(Class, subclass);
+_MAC_F0(NSCell*, cell);
+_MAC_F0(NSButton*, button);
+_MAC_F0(void, setAction, SEL);
+_MAC_F0(void, setTarget, void*);
+_MAC_F0(bool, setActivationPolicy, NSInteger);
+_MAC_F0(void, activateIgnoringOtherApps, bool);
+_MAC_F0(NSApplication*, sharedApplication);
+_MAC_F0(void, run);
+_MAC_F0(NSInteger, runModal);
+_MAC_F0(void, stop, void*);
+_MAC_F0(NSUserDefaults*, standardUserDefaults);
+_MAC_F0(NSObject*, objectForKey, NSString*);
+_MAC_F0(void, setObject, NSObject*,
+              forKey, NSString*);
+_MAC_F0(void, setBool, bool,
+              forKey, NSString*);
+_MAC_F0(NSString*, localizedStringForKey, NSString*,
+                   value, NSString*,
+                   table, NSString*);
+_MAC_F0(NSBundle*, bundleWithIdentifier, NSString*);
+_MAC_F0(NSBundle*, mainBundle);
+_MAC_F0(NSString*, bundlePath);
+_MAC_F0(NSArray*, URLsForDirectory, NSInteger,
+                  inDomains, NSInteger);
+_MAC_F0(NSArray*, URLs);
+_MAC_F0(NSMenuItem*, separatorItem);
+_MAC_F0(void, addItem, NSMenuItem*);
+_MAC_F0(void, setAutoenablesItems, bool);
+_MAC_F0(NSImage*, imageNamed, NSString*);
+_MAC_F0(void, setImage, NSImage*);
+_MAC_F0(void, setOnStateImage, NSImage*);
+_MAC_F0(void, setSubmenu, NSMenu*);
+_MAC_F0(bool, popUpMenuPositioningItem, NSMenuItem*,
+              atLocation, NSPoint,
+              inView, NSView*);
+_MAC_F0(void, lockFocus);
+_MAC_F0(void, unlockFocus);
+_MAC_F0(CGImageRef, CGImageForProposedRect, NSRect*,
+                    context, NSGraphicsContext*,
+                    hints, NSDictionary*);
+_MAC_F0(NSImage*, initWithSize, NSSize);
+_MAC_F0(NSImage*, initWithCGImage, CGImageRef,
+                  size, NSSize);
+_MAC_F0(NSWindow*, initWithContentRect, NSRect,
+                   styleMask, NSInteger,
+                   backing, NSInteger,
+                   defer, bool);
+_MAC_F0(NSMenuItem*, initWithTitle, NSString*,
+                     action, SEL,
+                     keyEquivalent, NSString*);
+_MAC_FS(NSRect, contentRectForFrameRect, NSRect);
+_MAC_FS(NSRect, frameRectForContentRect, NSRect);
+_MAC_FS(NSRect, visibleFrame);
+_MAC_FS(NSRect, frame);
+_MAC_F0(void, setFrame, NSRect);
+_MAC_F0(void, setFrame, NSRect,
+              display, bool,
+              animate, bool);
+_MAC_F0(NSString*, characters);
+_MAC_F0(NSString*, charactersIgnoringModifiers);
+_MAC_F0(bool, acceptsFirstResponder);
+_MAC_F0(void, setInitialFirstResponder, NSView*);
+_MAC_F0(void, setMinSize, NSSize);
+_MAC_F0(void, setTitle, NSString*);
+_MAC_F0(void, setStringValue, NSString*);
+_MAC_F0(bool, windowShouldClose, void*);
+_MAC_F0(void, windowDidResize, void*);
+_MAC_F0(bool, isKeyWindow);
+_MAC_F0(void, makeKeyWindow);
+_MAC_F0(void, orderFront, void*);
+_MAC_F0(void, orderOut, void*);
+_MAC_F0(void, setNeedsDisplay, bool);
+_MAC_F0(void, setDelegate, void*);
+_MAC_F0(void, setEnabled, bool);
+_MAC_F0(void, setNextKeyView, NSView*);
+_MAC_F0(void, setDefaultButtonCell, NSButtonCell*);
+_MAC_F0(void, setPostsBoundsChangedNotifications, bool);
+_MAC_F0(void, setPostsFrameChangedNotifications, bool);
+_MAC_F0(void, addObserver, id,
+              selector, SEL,
+              name, NSString*,
+              object, id);
+_MAC_F0(void, removeObserver, id,
+              name, NSString*,
+              object, id);
+_MAC_F0(void, scrollToPoint, NSPoint);
+_MAC_F0(NSNotificationCenter*, defaultCenter);
+_MAC_FS(NSRect, documentVisibleRect);
+_MAC_F0(NSClipView*, contentView);
+_MAC_F0(NSView*, verticalScroller);
+_MAC_F0(void, setHasVerticalScroller, bool);
+_MAC_F0(bool, isEnabled);
+_MAC_F0(NSInteger, state);
+_MAC_F0(void, setState, NSInteger);
+_MAC_F0(void, setToolTip, NSString*);
+_MAC_F0(void, setButtonType, NSInteger);
+_MAC_F0(void, setBezelStyle, NSInteger);
+_MAC_F0(void, setImagePosition, NSInteger);
+_MAC_F0(void, setSendsActionOnEndEditing, bool);
+_MAC_F0(bool, control, void*,
+              textView, NSView*,
+              doCommandBySelector, SEL);
+_MAC_F0(void, moveDown, void*);
+_MAC_F0(void, moveUp, void*);
+_MAC_F0(void, setEditable, bool);
+_MAC_F0(void, setSelectable, bool);
+_MAC_F0(void, setBezeled, bool);
+_MAC_F0(void, setBordered, bool);
+_MAC_F0(void, setDrawsBackground, bool);
+_MAC_F0(void, setScrollable, bool);
+_MAC_F0(NSStatusItem*, statusItemWithLength, CGFloat);
+_MAC_F0(void, removeStatusItem, NSStatusItem*);
+_MAC_F0(NSStatusBar*, systemStatusBar);
+_MAC_F0(NSScreen*, mainScreen);
+_MAC_FF(CGFloat, thickness);
+_MAC_F0(NSSize, cellSize);
+_MAC_F0(NSInteger, tag);
+_MAC_F0(void, setTag, NSInteger);
+_MAC_F0(void, setHighlightMode, NSInteger);
+_MAC_F0(void, setHidden, bool);
+_MAC_F0(void, setContentView, NSView*);
+_MAC_F0(void, setDocumentView, NSView*);
+_MAC_F0(void, addSubview, NSView*);
+_MAC_F0(bool, isFlipped);
+_MAC_F0(void, drawRect, NSRect);
+_MAC_F0(NSUInteger, type);
+_MAC_F0(void, keyUp, NSEvent*);
+_MAC_F0(void, keyDown, NSEvent*);
+_MAC_F0(unsigned short, keyCode);
+_MAC_F0(NSPoint, mouseLocation);
+_MAC_F0(NSInteger, pressedMouseButtons);
+_MAC_F0(void, setIgnoresMouseEvents, bool);
+_MAC_F0(CGContextRef, graphicsPort);
+_MAC_F0(NSGraphicsContext*, currentContext);
+_MAC_F0(NSFileManager*, defaultManager);
+_MAC_F0(NSFont*, systemFontOfSize, CGFloat);
+_MAC_FF(CGFloat, systemFontSize);
+_MAC_F0(NSSize, maximumAdvancement);
+_MAC_F0(void, setIndeterminate, bool);
+_MAC_F0(void, setAlignment, NSInteger);
+_MAC_F0(void, addTableColumn, NSTableColumn*);
+_MAC_F0(NSCell*, headerCell);
+_MAC_F0(void, setWantsLayer, bool);
+_MAC_F0(void, scaleUnitSquareToSize, NSSize);
+_MAC_F0(void, addAttribute, NSString*,
+              value, id,
+              range, NSRange);
+_MAC_F0(NSTextStorage*, initWithString, NSString*);
+_MAC_F0(NSTextContainer*, initWithContainerSize, NSSize);
+_MAC_F0(void, addTextContainer, NSTextContainer*);
+_MAC_F0(void, addLayoutManager, NSLayoutManager*);
+_MAC_F0(void, setLineFragmentPadding, CGFloat);
+_MAC_F0(void, glyphRangeForTextContainer, NSTextContainer*);
+_MAC_FS(NSRect, usedRectForTextContainer, NSTextContainer*);
+_MAC_F0(void, drawInRect, NSRect,
+              withAttributes, NSDictionary*);
+_MAC_F0(NSSize, sizeWithAttributes, NSDictionary*);
+_MAC_F0(void, textDidChange, void*);
+_MAC_F0(NSString*, stringValue);
+_MAC_FF(double, doubleValue);
+_MAC_F0(void, setDoubleValue, double);
+_MAC_F0(void, setIntegerValue, NSInteger);
+_MAC_F0(void, displayIfNeeded);
+_MAC_F0(void, display);
+_MAC_F0(void, setMinValue, double);
+_MAC_F0(void, setMaxValue, double);
+_MAC_F0(void, setValueWraps, bool);
+_MAC_F0(void, setFormatter, NSNumberFormatter*);
+_MAC_F0(void, setFormatterBehavior, NSInteger);
+_MAC_F0(void, setNumberStyle, NSInteger);
+_MAC_F0(void, setPartialStringValidationEnabled, bool);
+_MAC_F0(bool, isPartialStringValid, NSString*,
+              newEditingString, NSString*,
+              errorDescription, NSString*);
+_MAC_F0(bool, getObjectValue, void**,
+              forString, NSString*, errorDescription, NSString*);
+_MAC_F0(void, reloadData);
+_MAC_F0(void*, dataCell);
+_MAC_F0(void, setDataCell, NSCell*);
+_MAC_F0(void, setDataSource, void*);
+_MAC_F0(void, setResizingMask, NSInteger);
+_MAC_F0(NSInteger, numberOfRowsInTableView, NSTableView*);
+_MAC_F0(void*, tableView, NSTableView*,
+               objectValueForTableColumn, NSTableColumn*,
+               row, NSInteger);
+_MAC_F0(void, tableView, NSTableView*,
+              setObjectValue, void*,
+              forTableColumn, NSTableColumn*,
+              row, NSInteger);
+_MAC_F0(NSCell*, tableView, NSTableView*,
+                 dataCellForTableColumn, NSTableColumn*,
+                 row, NSInteger);
+_MAC_F0(NSView*, tableView, NSTableView*,
+                 viewForTableColumn, NSTableColumn*,
+                 row, NSInteger);
+_MAC_F0(void, push);
+_MAC_F0(void, pop);
+_MAC_F0(NSCursor*, pointingHandCursor);
+_MAC_F0(void, flushBuffer);
+_MAC_F0(NSOpenGLContext*, openGLContext);
+_MAC_F0(bool, isOpaque);
+_MAC_F0(void, setOpaque, bool);
+_MAC_F0(NSOpenGLPixelFormat*, initWithAttributes, int*);
+_MAC_F0(NSOpenGLView*, initWithFrame, NSRect,
+                       pixelFormat, NSOpenGLPixelFormat*);
+_MAC_F0(void, makeCurrentContext);
+_MAC_F0(void, setValues, int*,
+              forParameter, NSInteger);
+_MAC_F0(void, setLevel, NSInteger);
+_MAC_F0(void, setHasShadow, bool);
+_MAC_F0(NSColor*, colorWithDeviceRed, CGFloat,
+                  green, CGFloat,
+                  blue, CGFloat,
+                  alpha, CGFloat);
+_MAC_F0(NSColor*, colorWithCGColor, CGColorRef);
+_MAC_F0(NSColor*, controlTextColor);
+_MAC_F0(NSColor*, disabledControlTextColor);
+_MAC_F0(NSColor*, placeholderTextColor);
+_MAC_F0(NSColor*, textColor);
+_MAC_F0(NSColor*, clearColor);
+_MAC_F0(void, setTextColor, NSColor*);
+_MAC_F0(void, setBackgroundColor, NSColor*);
+_MAC_F0(void, postEvent, NSEvent*, atStart, bool);
+_MAC_F0(NSEvent*, otherEventWithType, NSInteger,
+                  location, NSPoint,
+                  modifierFlags, NSInteger,
+                  timestamp, NSTimeInterval,
+                  windowNumber, NSInteger,
+                  context, NSGraphicsContext*,
+                  subtype, short,
+                  data1, NSInteger,
+                  data2, NSInteger);
+_MAC_F0(void, performSelector, SEL,
+              target, id,
+              argument, id,
+              order, NSUInteger,
+              modes, NSArray*);
+_MAC_F0(NSRunLoop*, currentRunLoop);
+_MAC_F0(NSButton*, addButtonWithTitle, NSString*);
+_MAC_F0(void, setMessageText, NSString*);
+_MAC_F0(void, setInformativeText, NSString*);
+_MAC_F0(void, setAlertStyle, NSInteger);
+_MAC_F0(NSOpenPanel*, openPanel);
+_MAC_F0(void, setAllowsMultipleSelection, bool);
+_MAC_F0(void, setCanChooseDirectories, bool);
+_MAC_F0(void, setCanChooseFiles, bool);
+_MAC_F0(void, setAllowedFileTypes, NSArray*);
+_MAC_F0(void, setNameFieldStringValue, NSString*);
+_MAC_F0(void, setDirectoryURL, NSURL*);
+_MAC_F0(bool, wantsBestResolutionOpenGLSurface);
+_MAC_F0(NSSize, convertSizeToBacking, NSSize);
+_MAC_F0(NSSize, convertSizeFromBacking, NSSize);
+_MAC_F0(NSPoint, convertPointToBacking, NSPoint);
+_MAC_F0(NSPoint, convertPointFromBacking, NSPoint);
+_MAC_FS(NSRect, convertRectToBacking, NSRect);
+_MAC_FS(NSRect, convertRectFromBacking, NSRect);
 
 #undef _MAC_L
 #undef _MAC_L4
-#undef _MAC_P1
-#undef _MAC_P0
-#undef _MAC_A1
-#undef _MAC_A0
+#undef _MAC_L3
+#undef _MAC_L2
+#undef _MAC_L1
+#undef _MAC_L0
+#undef _MAC_TYPE_ARG0
+#undef _MAC_TYPE_ARG1
+#undef _MAC_ONLY_ARG0
+#undef _MAC_ONLY_ARG1
+#undef _MAC_FUNC_LEX0
+#undef _MAC_FUNC_LEX1
+#undef _MAC_FUNC_STR0
+#undef _MAC_FUNC_STR1
 #undef _MAC_F
+#undef _MAC_F0
+#undef _MAC_FF
+#undef _MAC_FS
 #undef _MAC_T
 #undef _MAC_T2
 #undef _MAC_T1
@@ -1961,7 +962,7 @@ static Class MAC_MakeClass(char *name, Class base, void **flds, void **mths) {
         _MAC_Subclasses = realloc(_MAC_Subclasses,
                                  (iter + 2) * sizeof(*_MAC_Subclasses));
         _MAC_Subclasses[iter] =
-            (typeof(*_MAC_Subclasses)){retn, strdup(name), 1};
+            (__typeof__(*_MAC_Subclasses)){retn, strdup(name), 1};
         _MAC_Subclasses[iter + 1].name = 0;
 
         iter = -1;
