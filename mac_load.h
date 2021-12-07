@@ -551,6 +551,7 @@ _MAC_F0(CGImageRef, CGImageForProposedRect, NSRect*,
 _MAC_F0(NSImage*, initWithSize, NSSize);
 _MAC_F0(NSImage*, initWithCGImage, CGImageRef,
                   size, NSSize);
+_MAC_F0(NSWindow*, window);
 _MAC_F0(NSWindow*, initWithContentRect, NSRect,
                    styleMask, NSInteger,
                    backing, NSInteger,
@@ -622,6 +623,7 @@ _MAC_F0(NSStatusItem*, statusItemWithLength, CGFloat);
 _MAC_F0(void, removeStatusItem, NSStatusItem*);
 _MAC_F0(NSStatusBar*, systemStatusBar);
 _MAC_F0(NSScreen*, mainScreen);
+_MAC_FF(CGFloat, backingScaleFactor);
 _MAC_FF(CGFloat, thickness);
 _MAC_F0(NSSize, cellSize);
 _MAC_F0(NSInteger, tag);
@@ -718,16 +720,37 @@ _MAC_F0(void, setValues, int*,
               forParameter, NSInteger);
 _MAC_F0(void, setLevel, NSInteger);
 _MAC_F0(void, setHasShadow, bool);
+_MAC_F0(void, getRed, CGFloat*,
+              green, CGFloat*,
+              blue, CGFloat*,
+              alpha, CGFloat*);
 _MAC_F0(NSColor*, colorWithDeviceRed, CGFloat,
                   green, CGFloat,
                   blue, CGFloat,
                   alpha, CGFloat);
 _MAC_F0(NSColor*, colorWithCGColor, CGColorRef);
-_MAC_F0(NSColor*, controlTextColor);
+_MAC_F0(NSColor*, colorUsingColorSpaceName, NSString*);
+_MAC_F0(NSColor*, highlightColor);
+_MAC_F0(NSColor*, alternateSelectedControlTextColor);
+_MAC_F0(NSColor*, windowFrameTextColor);
+_MAC_F0(NSColor*, windowBackgroundColor);
+_MAC_F0(NSColor*, selectedControlTextColor);
+_MAC_F0(NSColor*, selectedControlColor);
 _MAC_F0(NSColor*, disabledControlTextColor);
-_MAC_F0(NSColor*, placeholderTextColor);
+_MAC_F0(NSColor*, controlTextColor);
+_MAC_F0(NSColor*, controlBackgroundColor);
+_MAC_F0(NSColor*, controlColor);
+_MAC_F0(NSColor*, headerTextColor);
+_MAC_F0(NSColor*, gridColor);
+_MAC_F0(NSColor*, selectedMenuItemTextColor);
+_MAC_F0(NSColor*, keyboardFocusIndicatorColor);
+_MAC_F0(NSColor*, selectedTextBackgroundColor);
+_MAC_F0(NSColor*, textBackgroundColor);
+_MAC_F0(NSColor*, selectedTextColor);
 _MAC_F0(NSColor*, textColor);
+_MAC_F0(NSColor*, shadowColor);
 _MAC_F0(NSColor*, clearColor);
+_MAC_F0(NSUInteger, currentControlTint);
 _MAC_F0(void, setTextColor, NSColor*);
 _MAC_F0(void, setBackgroundColor, NSColor*);
 _MAC_F0(void, postEvent, NSEvent*, atStart, bool);
@@ -805,6 +828,7 @@ extern NSString *NSBackgroundColorAttributeName;
 extern NSString *NSViewBoundsDidChangeNotification;
 extern NSString *NSViewFrameDidChangeNotification;
 extern NSString *NSRunLoopCommonModes;
+extern NSString *NSDeviceRGBColorSpace;
 
 extern void NSBeep();
 extern void CGSSetConnectionProperty(int, int, CFStringRef, CFBooleanRef);
