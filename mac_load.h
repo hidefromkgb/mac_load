@@ -467,6 +467,7 @@ _MAC_T(NSObject);
 _MAC_T(NSUserDefaults);
 _MAC_T(NSRunLoop);
 _MAC_T(NSApplication);
+_MAC_T(NSAppearance);
 _MAC_T(NSAutoreleasePool);
 _MAC_T(NSNotificationCenter);
 _MAC_T(NSNotification);
@@ -514,6 +515,7 @@ _MAC_F0(void*, release);
 _MAC_F0(void*, retain);
 _MAC_F0(Class, class);
 _MAC_F0(Class, subclass);
+_MAC_F0(NSString*, name);
 _MAC_F0(NSCell*, cell);
 _MAC_F0(NSButton*, button);
 _MAC_F0(void, setAction, SEL);
@@ -521,6 +523,7 @@ _MAC_F0(void, setTarget, void*);
 _MAC_F0(bool, setActivationPolicy, NSInteger);
 _MAC_F0(void, activateIgnoringOtherApps, bool);
 _MAC_F0(NSApplication*, sharedApplication);
+_MAC_F0(NSAppearance*, effectiveAppearance);
 _MAC_F0(void, run);
 _MAC_F0(NSInteger, runModal);
 _MAC_F0(void, stop, void*);
@@ -851,6 +854,12 @@ extern int _CGSDefaultConnection();
 #define MAC_10_09_PLUS (kCFCoreFoundationVersionNumber >=  855.11)
 #define MAC_10_10_PLUS (kCFCoreFoundationVersionNumber >= 1151.16)
 #define MAC_10_11_PLUS (kCFCoreFoundationVersionNumber >= 1253.00)
+#define MAC_10_12_PLUS (kCFCoreFoundationVersionNumber >= 1348.00)
+/// the following values are speculative and do not come from the official ObjC
+/// constants (no idea why Apple stopped updating them), although they do work:
+#define MAC_10_13_PLUS (kCFCoreFoundationVersionNumber >= 1400.00)
+#define MAC_10_14_PLUS (kCFCoreFoundationVersionNumber >= 1500.00)
+#define MAC_10_15_PLUS (kCFCoreFoundationVersionNumber >= 1600.00)
 
 
 
