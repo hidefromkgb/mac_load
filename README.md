@@ -109,3 +109,7 @@ int main() {
     return EXIT_SUCCESS;
 }
 ```
+
+More advanced examples can be found [here](https://github.com/hidefromkgb/DPengine),
+or [here](https://github.com/hidefromkgb/msu3-waves),
+or [here](https://github.com/hidefromkgb/ogl_stub).
