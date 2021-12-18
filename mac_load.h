@@ -503,6 +503,7 @@ _MAC_T(NSTextStorage);
 _MAC_T(NSColor);
 _MAC_T(NSCursor);
 _MAC_T(NSPanel);
+_MAC_T(NSBezierPath);
 _MAC_T(NSOpenGLView);
 _MAC_T(NSOpenGLContext);
 _MAC_T(NSOpenGLPixelFormat);
@@ -511,6 +512,7 @@ _MAC_T(NSOpenGLPixelFormat);
 
 _MAC_F0(void*, init);
 _MAC_F0(void*, alloc);
+_MAC_F0(void*, autorelease);
 _MAC_F0(void*, release);
 _MAC_F0(void*, retain);
 _MAC_F0(Class, class);
@@ -694,7 +696,8 @@ _MAC_F0(bool, isPartialStringValid, NSString*,
               newEditingString, NSString*,
               errorDescription, NSString*);
 _MAC_F0(bool, getObjectValue, void**,
-              forString, NSString*, errorDescription, NSString*);
+              forString, NSString*,
+              errorDescription, NSString*);
 _MAC_F0(void, reloadData);
 _MAC_F0(void*, dataCell);
 _MAC_F0(void, setDataCell, NSCell*);
@@ -733,6 +736,7 @@ _MAC_F0(void, getRed, CGFloat*,
               green, CGFloat*,
               blue, CGFloat*,
               alpha, CGFloat*);
+_MAC_F0(void, set);
 _MAC_F0(NSColor*, colorWithDeviceRed, CGFloat,
                   green, CGFloat,
                   blue, CGFloat,
@@ -762,6 +766,8 @@ _MAC_F0(NSColor*, clearColor);
 _MAC_F0(NSUInteger, currentControlTint);
 _MAC_F0(void, setTextColor, NSColor*);
 _MAC_F0(void, setBackgroundColor, NSColor*);
+_MAC_F0(void, strokeLineFromPoint, NSPoint,
+              toPoint, NSPoint);
 _MAC_F0(void, postEvent, NSEvent*, atStart, bool);
 _MAC_F0(NSEvent*, otherEventWithType, NSInteger,
                   location, NSPoint,
