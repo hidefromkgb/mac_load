@@ -40,6 +40,8 @@ extern "C" {
 #include <CoreFoundation/CoreFoundation.h>
 #include <objc/objc-runtime.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 
 
@@ -399,12 +401,67 @@ z, ...) _MAC_L##z(f, p, i##i00, a00)
 // this is needed to get selectors or classes by name
 #define _(callable) _MAC_CAT(__, callable)()
 
+// In the absense of MAC_LOAD_DYNAMIC all functions get resolved when the image
+// is mapped instead of on the first call: a selector becomes an __objc_selrefs
+// entry which the ObjC runtime uniques as it maps the image, so it then costs
+// one load with no branch and no lazy initializer, and the sections emitted are
+// exactly the ones clang yields for the same code in ObjC. Nothing in here gets
+// imported so both ObjC runtimes and every architecture take this equally well.
+// [WONTFIX:] classes stay dynamic regardless of this flag, and deliberately so.
+// The same trick would spell them as weakly imported OBJC_CLASS_$_ symbols read
+// out of __objc_classrefs, which needs the non-fragile runtime that x86_32 is
+// not obliged to have, also making objc_allocateClassPair() refuse to subclass
+// whatever got returned, most likely because those are the bare class objects
+// but not realized classes - enough for objc_msgSend() as it realizes whatever
+// it is given, but not for the runtime API.
+#ifndef MAC_LOAD_DYNAMIC
+
+// the runtime only fixes selrefs up in images which declare ObjC metadata of
+// their own; one having neither this section nor an __OBJC segment is skipped
+// whole, leaving every SEL below pointing at its own name instead
+__attribute__((used, section("__DATA,__objc_imageinfo,regular,no_dead_strip")))
+static const unsigned _MAC_IINF[] = {0, 0};
+
+// [IMPORTANT:] 'volatile' is not a style choice, and neither is the absence of
+// 'used' next to the sections. The runtime writes the unique selector into the
+// slot from outside the program, which clang states in its own ObjC output by
+// marking the global externally_initialized, an LLVM notion with no analog in
+// C; lacking it, code optimizer propagates the initializer and quietly hands
+// objc_msgSend() the bare method name - 'used' happens to prevent that too, by
+// keeping the slot alive, but at the price of emitting all of the selectors
+// declared below into every object file which includes this header, called or
+// not, while 'volatile' makes the compiler omit the uncalled ones before the
+// linker ever sees them.
+#define _MAC_SDEF(name, text)                                                  \
+__attribute__((section("__TEXT,__objc_methname,cstring_literals")))            \
+static const char _MAC_CAT(_MAC_SSTR, name)[] = text;                          \
+__attribute__((section(                                                        \
+    "__DATA,__objc_selrefs,literal_pointers,no_dead_strip")))                  \
+static const SEL volatile _MAC_CAT(_MAC_SREF, name)                            \
+    = (SEL)_MAC_CAT(_MAC_SSTR, name);                                          \
+__attribute__((unused)) static inline SEL _(name) {                            \
+    return _MAC_CAT(_MAC_SREF, name);                                          \
+}
+
+#else // MAC_LOAD_DYNAMIC (the actual dynamic branch:)
+
+#define _MAC_SDEF(name, text) __attribute__((unused)) static SEL _(name) {     \
+    static SEL what = 0; if (!what) what = sel_registerName(text);             \
+    return what;                                                               \
+}
+
+#endif // MAC_LOAD_DYNAMIC
+
+#define _MAC_CDEF(a) __attribute__((unused)) static Class _(a) {               \
+    static Class what = 0; if (!what) what = (Class)objc_getClass(#a);         \
+    return what;                                                               \
+}
+
 // these are needed to declare functions
-#define _MAC_F(type, retn, ...) __attribute__((unused)) static                 \
-SEL _(_MAC_L(_MAC_CAT, _MAC_FUNC_LEX, __VA_ARGS__)) {                          \
-    static SEL what = 0; if (!what) what = sel_registerName(                   \
-        _MAC_L(_MAC_SEQ, _MAC_FUNC_STR, __VA_ARGS__)); return what;            \
-} __attribute__((unused)) static inline                                        \
+#define _MAC_F(type, retn, ...)                                                \
+_MAC_SDEF(_MAC_L(_MAC_CAT, _MAC_FUNC_LEX, __VA_ARGS__),                        \
+          _MAC_L(_MAC_SEQ, _MAC_FUNC_STR, __VA_ARGS__))                        \
+__attribute__((unused)) static inline                                          \
 retn _MAC_L(_MAC_CAT, _MAC_FUNC_LEX, __VA_ARGS__)                              \
     (void *inst _MAC_L(_MAC_SEQ, _MAC_TYPE_ARG, __VA_ARGS__)) {                \
     return ((retn (*)(void*, SEL                                               \
@@ -423,15 +480,30 @@ retn _MAC_CAT(super_, _MAC_L(_MAC_CAT, _MAC_FUNC_LEX, __VA_ARGS__))            \
 #define _MAC_F0(retn, ...) _MAC_F(      , retn, __VA_ARGS__)
 #define _MAC_FF(retn, ...) _MAC_F(_fpret, retn, __VA_ARGS__)
 #define _MAC_FS(retn, ...) _MAC_F(_stret, retn, __VA_ARGS__)
-// not sure if this is correct
-#define objc_msgSendSuper_fpret objc_msgSendSuper
 
-// these are needed to declare types
+/// libobjc never shipped a super variant of _fpret on any ISA; aliasing it is
+/// safe because the wrappers above cast the entry point to the exact prototype
+/// of the method - and it is that cast, not the entry point, which chooses the
+/// ABI: every objc_msgSend flavour merely tail-jumps to the IMP, thus leaving
+/// the return registers exactly as the IMP left them
+#define objc_msgSendSuper_fpret objc_msgSendSuper
+#if !__i386__
+    /// _fpret exists to collect x87 returns, which only i386 has: on x86_64 it
+    /// is reserved for long double, and arm64 has no such entry point at all,
+    /// so on both a CGFloat comes back from plain objc_msgSend in xmm0 / v0
+    #define objc_msgSend_fpret objc_msgSend
+#endif
+#if __arm64__ || __aarch64__
+    /// likewise arm64 has no _stret: a struct too big for registers is written
+    /// through the indirect result register x8, which plain objc_msgSend
+    /// already does, and linking against _stret there fails outright
+    #define objc_msgSend_stret objc_msgSend
+    #define objc_msgSendSuper_stret objc_msgSendSuper
+#endif
+
+/// these are needed to declare types
 #define _MAC_T(...) _MAC_T2(__VA_ARGS__, 1, 0)
-#define _MAC_T2(a, b, n, ...) __attribute__((unused)) static \
-Class _(a) { static Class what = 0;                          \
-    if (!what) what = (Class)objc_getClass(#a); return what; \
-} typedef struct _MAC_T##n(a, b) a
+#define _MAC_T2(a, b, n, ...) _MAC_CDEF(a) typedef struct _MAC_T##n(a, b) a
 #define _MAC_T1(a, b) b
 #define _MAC_T0(a, b) a
 
@@ -1003,7 +1075,19 @@ static Class MAC_MakeClass(char *name, Class base, void **flds, void **mths) {
             break;
         }
     if (!retn) {
-        retn = objc_allocateClassPair(base, name, 0);
+        /// This is fatal on purpose: objc_allocateClassPair() reports a refusal
+        /// by returning NULL, and neither class_addIvar() nor class_addMethod()
+        /// minds being handed one, so the NULL would travel all the way down to
+        /// objc_registerClassPair() which dereferences it; and were it returned
+        /// instead, the crash would merely move to the first message sent to an
+        /// instance of a class that was never made, by which point nothing left
+        /// in the backtrace would name the subclass that failed.
+        if (!(retn = objc_allocateClassPair(base, name, 0))) {
+            printf("ERROR: cannot inherit %s from %s: either the name is taken "
+                   "or the parent is non-inheritable; terminating!\n",
+                    name, (base) ? class_getName(base) : "parent class");
+            abort();
+        }
         _MAC_Subclasses = realloc(_MAC_Subclasses,
                                  (iter + 2) * sizeof(*_MAC_Subclasses));
         _MAC_Subclasses[iter] =
