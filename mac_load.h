@@ -587,6 +587,7 @@ _MAC_F0(void*, alloc);
 _MAC_F0(void*, autorelease);
 _MAC_F0(void*, release);
 _MAC_F0(void*, retain);
+_MAC_F0(void, dealloc);
 _MAC_F0(Class, class);
 _MAC_F0(Class, subclass);
 _MAC_F0(NSString*, name);
@@ -659,6 +660,7 @@ _MAC_F0(void, setTitle, NSString*);
 _MAC_F0(void, setStringValue, NSString*);
 _MAC_F0(bool, windowShouldClose, void*);
 _MAC_F0(void, windowDidResize, void*);
+_MAC_F0(bool, canBecomeKeyWindow);
 _MAC_F0(bool, isKeyWindow);
 _MAC_F0(void, makeKeyWindow);
 _MAC_F0(void, orderFront, void*);
@@ -1074,7 +1076,7 @@ static Class MAC_MakeClass(char *name, Class base, void **flds, void **mths) {
                 _MAC_Subclasses[iter].icnt++;
             break;
         }
-    if (!retn) {
+    if (!retn && base) {
         /// This is fatal on purpose: objc_allocateClassPair() reports a refusal
         /// by returning NULL, and neither class_addIvar() nor class_addMethod()
         /// minds being handed one, so the NULL would travel all the way down to
