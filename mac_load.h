@@ -285,6 +285,17 @@ enum {
     NSModeSwitchFunctionKey   = 0xF747,
 };
 enum {
+    NSEventModifierFlagCapsLock                   = (1 << 16),
+    NSEventModifierFlagShift                      = (1 << 17),
+    NSEventModifierFlagControl                    = (1 << 18),
+    NSEventModifierFlagOption                     = (1 << 19),
+    NSEventModifierFlagCommand                    = (1 << 20),
+    NSEventModifierFlagNumericPad                 = (1 << 21),
+    NSEventModifierFlagHelp                       = (1 << 22),
+    NSEventModifierFlagFunction                   = (1 << 23),
+    NSEventModifierFlagDeviceIndependentFlagsMask = 0xFFFF0000u
+};
+enum {
     NSOpenGLPFAAllRenderers          =   1,
     NSOpenGLPFATripleBuffer          =   3,
     NSOpenGLPFADoubleBuffer          =   5,
@@ -721,6 +732,8 @@ _MAC_F0(void, addSubview, NSView*);
 _MAC_F0(bool, isFlipped);
 _MAC_F0(void, drawRect, NSRect);
 _MAC_F0(NSUInteger, type);
+_MAC_F0(NSUInteger, modifierFlags);
+_MAC_F0(void, flagsChanged, NSEvent*);
 _MAC_F0(void, keyUp, NSEvent*);
 _MAC_F0(void, keyDown, NSEvent*);
 _MAC_F0(unsigned short, keyCode);
